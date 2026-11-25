@@ -131,7 +131,7 @@ const meta = computed(() => {
   if (p.doubles !== null) parts.push(`nuo ${formatPrice(p.doubles)} / ${props.duration} min`)
   if (p.singles !== null) parts.push(`1v1 nuo ${formatPrice(p.singles)}`)
   // Non-breaking spaces keep each phrase ("1v1 nuo €30") on one line when the info line wraps
-  return parts.map(p => p.replace(/ /g, '00a0')).join(' · ')
+  return parts.map(part => part.replace(/ /g, '\u00a0')).join(' · ')
 })
 
 /** Collapsed-card chips: doubles price when a doubles court is free, else the singles price marked 1v1 */
