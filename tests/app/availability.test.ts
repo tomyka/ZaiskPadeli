@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildAvailabilityView, courtKind, courtMatches, nearestCity, resolveSession, type ViewFilters,
+  buildAvailabilityView, chipPrice, courtKind, courtMatches, nearestCity, pricesByKind, resolveSession,
+  venuePricesByKind, type ViewFilters,
 } from '../../app/utils/availability'
 import { court, venue } from './fixtures'
+import { venueSessions } from '../../app/utils/sessions'
 
 const ANY: ViewFilters = { city: null, duration: 60, type: null, indoor: null, fromTime: '' }
 const NOT_TODAY = -1
@@ -87,5 +89,29 @@ describe('nearestCity', () => {
   it('picks the closest city', () => {
     expect(nearestCity(54.69, 25.28)).toBe('Vilnius')
     expect(nearestCity(55.71, 21.15)).toBe('Klaipėda')
+  })
+})
+
+describe('prices by court type', () => {
+  const doubles = court('d', '11', '18:00', 20)
+  const single = court('s', '11', '18:00', 12, { type: 'singles' })
+  const unknown = court('u', '11', '18:00', 22, { type: 'unknown' })
+  const start = (cs: typeof doubles[]) => venueSessions(cs, 60).starts[0]!
+
+  it('reports the cheapest price per type, unknown counting as doubles', () => {
+    expect(pricesByKind(start([doubles, single, unknown]).courts)).toEqual({ doubles: 40, singles: 24 })
+  })
+
+  it('chips show the doubles price when a doubles court is free, even if singles is cheaper', () => {
+    expect(chipPrice(start([doubles, single]))).toEqual({ price: 40, singlesOnly: false })
+  })
+
+  it('chips mark starts where only singles courts are free', () => {
+    expect(chipPrice(start([single]))).toEqual({ price: 24, singlesOnly: true })
+  })
+
+  it('summarises a venue across all its starts', () => {
+    const late = court('d2', '0011', '18:00', 15)
+    expect(venuePricesByKind(venueSessions([single, late], 60).starts)).toEqual({ doubles: 30, singles: 24 })
   })
 })

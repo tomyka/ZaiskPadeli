@@ -8,7 +8,7 @@
       <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: accent }" aria-hidden="true"></span>
       <span class="min-w-0 flex-1">
         <span class="block truncate font-display text-[20px] font-semibold leading-tight text-ink">{{ venue.name }}</span>
-        <span class="block truncate text-xs text-gray-600">{{ meta }}</span>
+        <span class="block text-xs leading-snug text-gray-600">{{ meta }}</span>
       </span>
       <template v-if="!venue.error">
         <span class="shrink-0 text-[13px] font-bold text-ink tabular-nums">
@@ -37,17 +37,18 @@
 
       <!-- Collapsed: next few start times -->
       <div v-if="!expanded" class="flex gap-1.5 px-4 pb-3 pt-2.5">
-        <button v-for="s in sessions.starts.slice(0, PREVIEW)" :key="s.time" type="button"
+        <button v-for="s in previewStarts" :key="s.time" type="button"
           :aria-current="s.time === selectedTime ? 'true' : undefined"
+          :aria-label="s.label"
           :class="['flex h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center rounded-xl border transition active:scale-[0.97] lg:max-w-[5rem]',
             s.time === selectedTime ? SELECTED : IDLE]"
           @click="emit('pick', s.time)">
           <span class="font-display text-[19px] font-bold leading-none tabular-nums">{{ s.time }}</span>
-          <span v-if="s.minPrice !== null" class="mt-0.5 text-[11px] font-medium leading-none"
-            :class="s.time === selectedTime ? 'text-ink/70' : 'text-ink-muted'">{{ formatPrice(s.minPrice) }}</span>
+          <span v-if="s.priceText" class="mt-0.5 text-[11px] font-medium leading-none"
+            :class="s.time === selectedTime ? 'text-ink/70' : 'text-ink-muted'">{{ s.priceText }}</span>
         </button>
         <button v-if="sessions.starts.length > PREVIEW" type="button"
-          :aria-label="`Rodyti dar ${sessions.starts.length - PREVIEW} laikus`"
+          :aria-label="moreLabel"
           class="h-[3.25rem] shrink-0 rounded-xl border border-court-line bg-white px-3 text-sm font-semibold text-ink hover:border-ink/40"
           @click="emit('toggle')">
           +{{ sessions.starts.length - PREVIEW }}
@@ -64,6 +65,7 @@
           <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-[repeat(auto-fill,4.5rem)]">
             <button v-for="s in starts" :key="s.time" type="button"
               :aria-current="s.time === selectedTime ? 'true' : undefined"
+              :aria-label="[s.time, s.price !== null ? formatPrice(s.price) : '', court.name].filter(Boolean).join(', ')"
               :class="['flex min-h-[3rem] flex-col items-center justify-center rounded-xl border transition active:scale-[0.97]',
                 s.time === selectedTime ? SELECTED : IDLE]"
               @click="emit('pick', s.time)">
@@ -92,6 +94,7 @@ import { venueInfo } from '~~/server/utils/venues'
 import { SLOT_MIN } from '~~/server/utils/time'
 import { formatPrice, ltPlural } from '~/utils/format'
 import { sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
+import { chipPrice, venuePricesByKind } from '~/utils/availability'
 
 const props = defineProps<{
   venue: Venue
@@ -100,6 +103,8 @@ const props = defineProps<{
   strip: StripCell[]
   duration: number
   expanded: boolean
+  /** Show the venue's city in the info line (when results span several cities) */
+  showCity?: boolean
   /** Start time whose details are open beside the list (desktop), highlighted here */
   selectedTime?: string | null
 }>()
@@ -119,9 +124,32 @@ const accent = computed(() => venueInfo(props.venue.id)?.color ?? '#9ca3af')
 const meta = computed(() => {
   if (props.venue.error) return props.venue.address
   const n = props.courts.length
-  const parts = [`${n} ${ltPlural(n, 'kortas', 'kortai', 'kortų')}`]
-  if (props.sessions.minPrice !== null) parts.push(`nuo ${formatPrice(props.sessions.minPrice)} / ${props.duration} min`)
-  return parts.join(' · ')
+  const parts: string[] = props.showCity ? [props.venue.city] : []
+  parts.push(`${n} ${ltPlural(n, 'kortas', 'kortai', 'kortų')}`)
+  // Doubles is what a plain price means; singles is always labelled (it is usually much cheaper)
+  const p = venuePricesByKind(props.sessions.starts)
+  if (p.doubles !== null) parts.push(`nuo ${formatPrice(p.doubles)} / ${props.duration} min`)
+  if (p.singles !== null) parts.push(`1v1 nuo ${formatPrice(p.singles)}`)
+  // Non-breaking spaces keep each phrase ("1v1 nuo €30") on one line when the info line wraps
+  return parts.map(p => p.replace(/ /g, '00a0')).join(' · ')
+})
+
+/** Collapsed-card chips: doubles price when a doubles court is free, else the singles price marked 1v1 */
+const previewStarts = computed(() =>
+  props.sessions.starts.slice(0, PREVIEW).map((s) => {
+    const { price, singlesOnly } = chipPrice(s)
+    const priceStr = price !== null ? formatPrice(price) : ''
+    return {
+      time: s.time,
+      priceText: [priceStr, singlesOnly ? '1v1' : ''].filter(Boolean).join(' · '),
+      label: [s.time, priceStr, singlesOnly ? 'tik 1v1 kortai' : '', props.venue.name].filter(Boolean).join(', '),
+    }
+  })
+)
+
+const moreLabel = computed(() => {
+  const n = props.sessions.starts.length - PREVIEW
+  return `Rodyti dar ${n} ${ltPlural(n, 'laiką', 'laikus', 'laikų')}`
 })
 
 const courtsWithStarts = computed(() => props.sessions.perCourt.filter(c => c.starts.length > 0))

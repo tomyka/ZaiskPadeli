@@ -78,11 +78,11 @@ export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMi
 export interface SelectedSession {
   venue: Venue
   start: SessionStart
-  /** A few other start times at the same venue to jump to */
+  /** Other start times at the same venue to jump to (generous, so a rare 2v2 slot is never cut off) */
   others: SessionStart[]
 }
 
-const OTHER_STARTS = 8
+const OTHER_STARTS = 24
 
 /** The selected session for one venue + start time, or null once that session is gone (e.g. after a refresh). */
 export function resolveSession(view: AvailabilityView, venueId: string, time: string): SelectedSession | null {
@@ -105,4 +105,40 @@ export function nearestCity(lat: number, lng: number): City {
     if (dist < minDist) { minDist = dist; nearest = city }
   }
   return nearest
+}
+
+// ── Prices by court type ──
+// Singles (1v1) courts are usually much cheaper, so a bare "from" price would
+// quote a singles court to people looking for doubles. Prices are therefore
+// reported per court type, and doubles is what a plain price means.
+
+export interface KindPrices {
+  doubles: number | null
+  singles: number | null
+}
+
+/** Cheapest price per court type among the given court sessions */
+export function pricesByKind(courts: { court: Court; price: number | null }[]): KindPrices {
+  const out: KindPrices = { doubles: null, singles: null }
+  for (const { court, price } of courts) {
+    if (price === null) continue
+    const k = courtKind(court)
+    out[k] = out[k] === null ? price : Math.min(out[k]!, price)
+  }
+  return out
+}
+
+/**
+ * What a time chip shows: the doubles price when a doubles court is free at
+ * that start, otherwise the singles price marked as singles-only.
+ */
+export function chipPrice(start: SessionStart): { price: number | null; singlesOnly: boolean } {
+  const singlesOnly = start.courts.every(c => courtKind(c.court) === 'singles')
+  const p = pricesByKind(start.courts)
+  return { price: singlesOnly ? p.singles : p.doubles, singlesOnly }
+}
+
+/** Cheapest price per court type across all of a venue's session starts */
+export function venuePricesByKind(starts: SessionStart[]): KindPrices {
+  return pricesByKind(starts.flatMap(s => s.courts))
 }

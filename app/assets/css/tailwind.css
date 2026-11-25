@@ -11,6 +11,11 @@
   body {
     @apply bg-court-bg text-ink antialiased;
   }
+  /* Keyboard focus must show on light and dark (ink) controls alike: deep orange keeps 3:1 on both */
+  :focus-visible {
+    outline: 3px solid theme('colors.ball.deep');
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {

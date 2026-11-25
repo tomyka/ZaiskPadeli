@@ -1,9 +1,9 @@
 <template>
-  <div class="mx-auto max-w-3xl px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:flex lg:max-w-[100rem] lg:items-start lg:gap-6 lg:px-8">
+  <div class="mx-auto max-w-3xl px-4 pb-10 pt-4 sm:px-6 sm:pt-6 lg:flex lg:max-w-[100rem] lg:items-start lg:gap-6 lg:px-8">
 
     <!-- ═══ CONTROLS: stacked rows on phones, a sticky sidebar on desktop ═══ -->
     <aside aria-label="Paieška"
-      class="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-64 lg:shrink-0 lg:overflow-y-auto lg:pb-4">
+      class="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:w-64 lg:shrink-0 lg:-m-1.5 lg:overflow-y-auto lg:p-1.5 lg:pb-4">
 
       <!-- Date -->
       <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Data</p>
@@ -24,9 +24,9 @@
           </button>
         </div>
         <!-- Calendar picker for dates beyond 7 days -->
-        <label class="relative shrink-0 cursor-pointer" title="Pasirinkti datą">
+        <label class="relative shrink-0 cursor-pointer rounded-xl focus-within:ring-[3px] focus-within:ring-ball-deep focus-within:ring-offset-2" title="Pasirinkti datą">
           <span class="sr-only">Pasirinkti kitą datą</span>
-          <input type="date" v-model="selectedDate" :min="today" :max="maxDate"
+          <input type="date" :value="selectedDate" :min="today" :max="maxDate" @change="pickDate" @blur="resetDateInput"
             class="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
           <span :class="['flex h-[52px] items-center justify-center rounded-xl border bg-white transition-colors duration-200 lg:w-full lg:px-0',
             isCustomDate
@@ -51,15 +51,15 @@
               : 'border-court-line bg-white text-ink hover:border-ink/40']">
           {{ d }} min
         </button>
-        <label class="relative ml-auto flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-dashed px-3 text-sm lg:ml-0 lg:w-full"
+        <label class="relative ml-auto flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-dashed px-3 text-sm focus-within:ring-[3px] focus-within:ring-ball-deep focus-within:ring-offset-2 lg:ml-0 lg:w-full"
           :class="fromTime ? 'border-ink bg-ink text-ball' : 'border-gray-400 bg-white text-gray-700'">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
           </svg>
           <span class="sr-only">Pradžios laikas</span>
-          <select v-model="fromTime" class="min-w-0 flex-1 appearance-none bg-transparent pr-1 font-medium focus:outline-none">
+          <select v-model="fromTime" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-1 font-medium focus:outline-none">
             <option value="">Bet kada</option>
-            <option v-for="t in view.startTimeOptions" :key="t" :value="t">nuo {{ t }}</option>
+            <option v-for="t in startTimeOptions" :key="t" :value="t">nuo {{ t }}</option>
           </select>
         </label>
       </div>
@@ -67,13 +67,13 @@
       <!-- City (+ more filters on phones) -->
       <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Miestas</p>
       <div class="mb-4 flex items-center gap-1.5 lg:mb-5">
-        <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-court-line bg-white pl-3 pr-2 text-sm text-gray-800 lg:flex-1">
+        <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-court-line bg-white pl-3 pr-2 text-sm text-gray-800 focus-within:ring-[3px] focus-within:ring-ball-deep focus-within:ring-offset-2 lg:flex-1">
           <svg class="h-4 w-4 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
           </svg>
           <span class="sr-only">Miestas</span>
-          <select v-model="selectedCity" class="min-w-0 flex-1 appearance-none bg-transparent pr-5 font-medium focus:outline-none">
+          <select v-model="selectedCity" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-5 font-medium focus:outline-none">
             <option :value="null">Visi miestai</option>
             <option v-for="city in CITIES" :key="city" :value="city">
               {{ city }}{{ ACTIVE_CITIES.has(city) ? '' : ' (greitai)' }}
@@ -148,11 +148,12 @@
           </button>
         </div>
 
-        <!-- Cards: one column on phones; two on desktop, three on very wide screens. While the session panel
+        <!-- Cards: one column on phones; two on desktop, three on very wide screens (an expanded card grows in
+             place so it never jumps away from the pointer). While the session panel
              takes ~22rem, step down one column so time chips keep their size -->
         <div :class="['grid items-start gap-3', panelSession ? 'min-[1700px]:grid-cols-2' : 'lg:grid-cols-2 min-[1700px]:grid-cols-3']">
-          <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id"
-            :class="['venue-card', expanded.has(v.venue.id) ? 'lg:col-span-full' : '']"
+          <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id" :show-city="!selectedCity"
+            class="venue-card"
             :style="{ animationDelay: `${vIdx * 50}ms` }"
             :venue="v.venue" :courts="v.courts" :sessions="v.sessions" :strip="v.strip"
             :duration="duration" :expanded="expanded.has(v.venue.id)"
@@ -163,13 +164,16 @@
 
         <!-- No results at all -->
         <div v-if="view.venues.length === 0" class="py-16 text-center">
-          <p class="font-medium text-gray-600">
-            <template v-if="selectedCity && !ACTIVE_CITIES.has(selectedCity)">
-              {{ selectedCity }} mieste kortų duomenys kol kas neprieinami
-            </template>
-            <template v-else>Nėra laisvų {{ duration }} min laikų pagal pasirinktus filtrus</template>
-          </p>
-          <div class="mt-4 flex flex-wrap justify-center gap-2">
+          <template v-if="selectedCity && !ACTIVE_CITIES.has(selectedCity)">
+            <!-- No data for this city at all: filters can't help, offer another city instead -->
+            <p class="font-medium text-gray-600">{{ CITY_GENITIVE[selectedCity] }} kortų duomenų kol kas neturime.</p>
+            <button type="button" @click="selectedCity = null"
+              class="mt-4 min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
+              Rodyti visus miestus
+            </button>
+          </template>
+          <p v-else class="font-medium text-gray-600">Nėra laisvų {{ duration }} min laikų pagal pasirinktus filtrus</p>
+          <div v-if="!selectedCity || ACTIVE_CITIES.has(selectedCity)" class="mt-4 flex flex-wrap justify-center gap-2">
             <button v-if="duration !== DURATIONS[0]" type="button" @click="duration = DURATIONS[0]"
               class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
               Bandyti {{ DURATIONS[0] }} min
@@ -193,7 +197,7 @@
 
         <!-- Data freshness indicator -->
         <p v-if="data" class="mt-6 text-center text-[11px] text-gray-600">
-          {{ data.fromCache ? `Talpykla · prieš ${data.cacheAgeSeconds}s` : 'Atnaujinta' }} · {{ formatTime(data.fetchedAt) }}
+          Atnaujinta {{ formatTime(data.fetchedAt) }}{{ data.fromCache && data.cacheAgeSeconds ? ` (prieš ${Math.max(1, Math.round(data.cacheAgeSeconds / 60))} min)` : '' }}
         </p>
       </template>
     </div>
@@ -207,22 +211,23 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>
       </button>
-      <SessionDetails :session="panelSession" :duration="duration" :day-label="selectedDayLabel"
-        @pick="time => openSession(panelSession!.venue.id, time)" />
+      <SessionDetails :session="panelSession" :duration="duration" :day-label="selectedDayLabel" :date="selectedDate"
+        @pick="time => switchSession(time)" />
     </aside>
 
     <!-- ═══ SESSION SHEET (phones) ═══ -->
-    <BottomSheet :open="!!selectedSession && !isDesktop" :show-title="false"
+    <BottomSheet ref="sessionSheetEl" :open="!!selectedSession && !isDesktop" :show-title="false"
       :title="sheetSession ? `${sheetSession.venue.name}, ${sheetSession.start.time}` : ''" @close="selectedKey = null">
-      <SessionDetails v-if="sheetSession" :session="sheetSession" :duration="duration" :day-label="selectedDayLabel"
-        @pick="time => openSession(sheetSession!.venue.id, time)" />
+      <SessionDetails v-if="sheetSession" :session="sheetSession" :duration="duration" :day-label="selectedDayLabel" :date="selectedDate"
+        @pick="time => switchSession(time)" />
     </BottomSheet>
 
     <!-- ═══ FILTER SHEET (phones) ═══ -->
     <BottomSheet :open="filtersOpen && !isDesktop" title="Filtrai" @close="filtersOpen = false">
       <CourtFilters v-model:type="filterType" v-model:indoor="filterIndoor" class="mb-6" />
       <div class="flex gap-2">
-        <button type="button" @click="clearFilters"
+        <!-- Clears only what this sheet sets; the start time lives outside it -->
+        <button type="button" @click="clearCourtFilters"
           class="h-12 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50">
           Išvalyti
         </button>
@@ -236,10 +241,10 @@
 </template>
 
 <script setup lang="ts">
-import type { AvailabilityResponse } from '~~/server/utils/types'
+import type { AvailabilityResponse, City } from '~~/server/utils/types'
 import { CITIES } from '~~/server/utils/types'
 import { ACTIVE_CITIES } from '~~/server/utils/venues'
-import { MAX_DAYS_AHEAD, addDays, currentMinutesFor, dayOfWeek, todayLT } from '~~/server/utils/time'
+import { MAX_DAYS_AHEAD, addDays, byDayTime, currentMinutesFor, dayOfWeek, isValidIsoDate, todayLT } from '~~/server/utils/time'
 import { buildAvailabilityView, nearestCity, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
 import { ltPlural } from '~/utils/format'
@@ -367,9 +372,43 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onPanelKey))
 const sheetSession = shallowRef<SelectedSession | null>(null)
 watch(selectedSession, (s) => { if (s) sheetSession.value = s })
 
+/** Moving to another time from inside the details: its button re-renders, so keep focus in the details */
+const sessionSheetEl = ref<{ focus: () => void } | null>(null)
+async function switchSession(time: string) {
+  if (!selectedKey.value) return
+  openSession(selectedKey.value.venueId, time)
+  await nextTick()
+  if (panelSession.value) panelEl.value?.focus()
+  else sessionSheetEl.value?.focus()
+}
+
 function clearFilters() {
   fromTime.value = ''
   clearCourtFilters()
+}
+
+/**
+ * The date input fires while someone is still typing (e.g. year 0012); only accept
+ * real dates inside the window the API serves, so no doomed requests or error screens.
+ */
+function pickDate(e: Event) {
+  const v = (e.target as HTMLInputElement).value
+  if (isValidIsoDate(v) && v >= today.value && v <= maxDate.value) selectedDate.value = v
+}
+/** Leaving the input with a half-typed date: show the date actually selected again */
+function resetDateInput(e: FocusEvent) {
+  (e.target as HTMLInputElement).value = selectedDate.value
+}
+
+/** The chosen start time stays listed even on a day that doesn't offer it, so the control never goes blank */
+const startTimeOptions = computed(() => {
+  const opts = view.value.startTimeOptions
+  return fromTime.value && !opts.includes(fromTime.value) ? [...opts, fromTime.value].sort(byDayTime) : opts
+})
+
+/** "Šiaulių kortų duomenų kol kas neturime" — city names in the genitive */
+const CITY_GENITIVE: Record<City, string> = {
+  Vilnius: 'Vilniaus', Kaunas: 'Kauno', Klaipėda: 'Klaipėdos', Šiauliai: 'Šiaulių', Panevėžys: 'Panevėžio',
 }
 
 function detectCity() {

@@ -34,9 +34,25 @@ const props = withDefaults(defineProps<{ open: boolean; title: string; showTitle
 const emit = defineEmits<{ close: [] }>()
 const panel = ref<HTMLElement | null>(null)
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
+  if (e.key === 'Escape') { emit('close'); return }
+  // aria-modal: keep Tab inside the sheet instead of wandering into the dimmed page
+  if (e.key !== 'Tab' || !panel.value) return
+  const items = [...panel.value.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(el => el.offsetParent !== null)
+  if (!items.length) { e.preventDefault(); return }
+  const first = items[0]!
+  const last = items[items.length - 1]!
+  const active = document.activeElement
+  if (e.shiftKey && (active === first || active === panel.value)) { e.preventDefault(); last.focus() }
+  else if (!e.shiftKey && (active === last || !panel.value.contains(active))) { e.preventDefault(); first.focus() }
 }
+
+/** Focus returns here when the sheet closes (the button that opened it) */
+let opener: HTMLElement | null = null
+
+defineExpose({ focus: () => panel.value?.focus() })
 
 let locked = false
 function setLocked(on: boolean) {
@@ -49,11 +65,14 @@ watch(() => props.open, async (open) => {
   if (!import.meta.client) return
   setLocked(open)
   if (open) {
+    opener = document.activeElement as HTMLElement | null
     window.addEventListener('keydown', onKey)
     await nextTick()
     panel.value?.focus()
   } else {
     window.removeEventListener('keydown', onKey)
+    if (opener?.isConnected) opener.focus()
+    opener = null
   }
 })
 
