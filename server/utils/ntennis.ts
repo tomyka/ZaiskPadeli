@@ -49,7 +49,11 @@ export function parseNTennisGrid(html: string, opts: NTennisGridOptions): Court[
 
   const courts: Court[] = []
   $('tr').each((_, row) => {
-    const nameEl = $(row).find('td.rbt-sticky-col, th.rbt-sticky-col')
+    const sticky = $(row).find('td.rbt-sticky-col, th.rbt-sticky-col')
+    // Older installs (e.g. DELFI sporto centras) put the court name in a plain first cell
+    const nameEl = sticky.length
+      ? sticky
+      : $(row).children('td').first().filter((_, el) => !($(el).attr('class') ?? '').includes('booking-slot'))
     const courtName = (opts.nameFromSpan && nameEl.find('span').first().text().trim()) || nameEl.text().trim()
     if (!courtName) return
 

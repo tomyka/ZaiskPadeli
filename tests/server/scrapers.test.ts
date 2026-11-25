@@ -29,6 +29,13 @@ describe('parseNTennisGrid', () => {
     expect(singles.slots[1]).toEqual({ time: '07:30', available: true, price: null })
   })
 
+  it('reads older grids whose court name is a plain first cell (DELFI sporto centras)', () => {
+    const courts = parseNTennisGrid(fixture('ntennis-grid-legacy.html'), { idPrefix: 'delfi', currentMinutes: -1 })
+    expect(courts.map(c => c.name)).toEqual(['Court by MaxiNutrition', 'Padel 2'])
+    expect(courts[1]!.slots[0]).toMatchObject({ time: '07:00', available: true })
+    expect(courts[1]!.slots).toHaveLength(30) // 07:00–21:30
+  })
+
   it('recognises singles courts by Lithuanian or English names', () => {
     expect(['Vienetų kortas', '5 Single SUN365', 'Kortas 1v1'].map(isSinglesCourtName)).toEqual([true, true, true])
     expect(['1 Biofarmacija', 'Padelis 3', 'Singapūras'].map(isSinglesCourtName)).toEqual([false, false, false])

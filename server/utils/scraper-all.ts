@@ -59,6 +59,7 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   rato: ntennisScraper({ baseUrl: 'https://savitarna.ratopadelioarena.lt', placeId: 1 }),
   skypadel: mooveScraper({ locationId: 145, indoor: false }),
   upadel: mooveScraper({ locationId: 297, indoor: true }),
+  delfi: ntennisScraper({ baseUrl: 'https://rezervacija.delfisportocentras.lt', placeId: 6 }),
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.

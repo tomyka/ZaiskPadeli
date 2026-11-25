@@ -340,6 +340,15 @@ export const VENUES = [
     indoor: true,
     color: '#b45309',
   },
+  {
+    id: 'delfi',
+    name: 'DELFI sporto centras',
+    address: 'Ozo g. 14C, Vilnius',
+    municipality: 'Vilnius',
+    bookingUrl: 'https://rezervacija.delfisportocentras.lt/',
+    indoor: true,
+    color: '#f97316',
+  },
 ] as const satisfies readonly VenueInfo[]
 
 export type VenueId = (typeof VENUES)[number]['id']
