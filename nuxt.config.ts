@@ -8,6 +8,13 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt',
   ],
 
+  // Display font (brand, venue names, day numbers, times), bundled rather than loaded from Google Fonts
+  css: [
+    '@fontsource/barlow-condensed/500.css',
+    '@fontsource/barlow-condensed/600.css',
+    '@fontsource/barlow-condensed/700.css',
+  ],
+
   app: {
     head: {
       title: 'Žaisk Padelį',
@@ -19,10 +26,6 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        // Display font for brand, venue names, day numbers and times
-        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap' },
       ],
       script: [
         {
