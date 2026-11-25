@@ -211,7 +211,7 @@
     </aside>
 
     <!-- ═══ SESSION SHEET (phones) ═══ -->
-    <BottomSheet :open="!!selected && !isDesktop" :show-title="false"
+    <BottomSheet :open="!!selectedSession && !isDesktop" :show-title="false"
       :title="sheetSession ? `${sheetSession.venue.name}, ${sheetSession.start.time}` : ''" @close="selectedKey = null">
       <SessionDetails v-if="sheetSession" :session="sheetSession" :duration="duration" :day-label="selectedDayLabel"
         @pick="time => openSession(sheetSession!.venue.id, time)" />
@@ -332,12 +332,12 @@ function openSession(venueId: string, time: string) {
 }
 
 /** Resolved from live data, so it closes itself if a refresh removes the session */
-const selected = computed<SelectedSession | null>(() =>
+const selectedSession = computed<SelectedSession | null>(() =>
   selectedKey.value ? resolveSession(view.value, selectedKey.value.venueId, selectedKey.value.time) : null
 )
 
 /** Shown in the side panel; also drives the card highlight and the narrower grid */
-const panelSession = computed(() => (isDesktop.value ? selected.value : null))
+const panelSession = computed(() => (isDesktop.value ? selectedSession.value : null))
 
 // The filter sheet is phone-only: don't let it reappear after the window narrows again
 watch(isDesktop, (desktop) => { if (desktop) filtersOpen.value = false })
@@ -364,7 +364,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onPanelKey))
 
 /** Last selected session, kept after the sheet closes so the content doesn't blank out during the leave transition */
 const sheetSession = shallowRef<SelectedSession | null>(null)
-watch(selected, (s) => { if (s) sheetSession.value = s })
+watch(selectedSession, (s) => { if (s) sheetSession.value = s })
 
 function clearFilters() {
   fromTime.value = ''

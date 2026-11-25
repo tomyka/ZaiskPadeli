@@ -9,7 +9,6 @@ import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueS
  * only binds the result.
  */
 
-export type { CourtKind }
 
 /** A court's type for display and filtering; an unknown type counts as doubles, the common case. */
 export function courtKind(court: Court): CourtKind {

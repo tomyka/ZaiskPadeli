@@ -4,8 +4,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Court } from '~~/server/utils/types'
-import { courtKind, type CourtKind } from '~/utils/availability'
+import type { Court, CourtKind } from '~~/server/utils/types'
+import { courtKind } from '~/utils/availability'
 
 /** Court type badge plus indoor/outdoor label */
 const props = defineProps<{ court: Court }>()
