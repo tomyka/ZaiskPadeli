@@ -15,12 +15,12 @@
             :class="[
               'flex h-[52px] min-w-[3.5rem] shrink-0 flex-col items-center justify-center rounded-xl px-2.5 transition-colors duration-200 lg:min-w-0 lg:px-0',
               selectedDate === day.date
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                : 'border border-gray-200 bg-white text-gray-700 hover:border-emerald-300'
+                ? 'bg-ink text-ball shadow-md shadow-ink/20'
+                : 'border border-court-line bg-white text-ink hover:border-ink/40'
             ]">
             <span class="text-[11px] font-medium"
-              :class="selectedDate === day.date ? 'text-emerald-100' : 'text-gray-500'">{{ day.label }}</span>
-            <span class="text-[17px] font-bold leading-tight tabular-nums">{{ day.day }}</span>
+              :class="selectedDate === day.date ? 'text-ink-muted' : 'text-gray-500'">{{ day.label }}</span>
+            <span class="font-display text-[22px] font-bold leading-none tabular-nums">{{ day.day }}</span>
           </button>
         </div>
         <!-- Calendar picker for dates beyond 7 days -->
@@ -30,8 +30,8 @@
             class="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
           <span :class="['flex h-[52px] items-center justify-center rounded-xl border bg-white transition-colors duration-200 lg:w-full lg:px-0',
             isCustomDate
-              ? 'gap-1.5 border-emerald-500 px-3 text-emerald-700'
-              : 'w-12 border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-700']">
+              ? 'gap-1.5 border-ink px-3 text-ink'
+              : 'w-12 border-court-line text-gray-600 hover:border-ink/40 hover:text-ink']">
             <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v9.75" />
             </svg>
@@ -47,12 +47,12 @@
           @click="duration = d"
           :class="['h-11 shrink-0 rounded-full border px-3.5 text-sm transition-colors lg:flex-1 lg:px-0',
             duration === d
-              ? 'border-emerald-600 bg-emerald-600 font-semibold text-white'
-              : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-300']">
+              ? 'border-ink bg-ink font-semibold text-ball'
+              : 'border-court-line bg-white text-ink hover:border-ink/40']">
           {{ d }} min
         </button>
         <label class="relative ml-auto flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-dashed px-3 text-sm lg:ml-0 lg:w-full"
-          :class="fromTime ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-gray-400 bg-white text-gray-700'">
+          :class="fromTime ? 'border-ink bg-ink text-ball' : 'border-gray-400 bg-white text-gray-700'">
           <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
           </svg>
@@ -67,7 +67,7 @@
       <!-- City (+ more filters on phones) -->
       <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Miestas</p>
       <div class="mb-4 flex items-center gap-1.5 lg:mb-5">
-        <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-gray-300 bg-white pl-3 pr-2 text-sm text-gray-800 lg:flex-1">
+        <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-court-line bg-white pl-3 pr-2 text-sm text-gray-800 lg:flex-1">
           <svg class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -87,7 +87,7 @@
           :aria-label="gpsState === 'error' ? 'Vieta neprieinama' : 'Nustatyti miestą pagal mano vietą'"
           :title="gpsState === 'error' ? 'GPS neprieinamas' : 'Mano vieta'"
           :class="['flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white transition',
-            gpsState === 'error' ? 'border-red-200 text-red-500' : 'border-gray-300 text-gray-600 hover:border-emerald-300 hover:text-emerald-700']">
+            gpsState === 'error' ? 'border-red-200 text-red-500' : 'border-court-line text-gray-600 hover:border-ink/40 hover:text-ink']">
           <svg v-if="gpsState === 'loading'" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
           </svg>
@@ -97,7 +97,7 @@
         </button>
         <button type="button" @click="filtersOpen = true"
           :class="['ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition lg:hidden',
-            extraFilterCount ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-300']">
+            extraFilterCount ? 'border-ink bg-ink text-ball' : 'border-court-line bg-white text-ink hover:border-ink/40']">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4" />
           </svg>
@@ -109,7 +109,7 @@
       <div class="hidden space-y-5 lg:block">
         <CourtFilters v-model:type="filterType" v-model:indoor="filterIndoor" />
         <button type="button" @click="clearFilters"
-          class="min-h-[44px] text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+          class="min-h-[44px] text-sm font-semibold text-ball-text hover:text-ball-deep">
           Išvalyti filtrus
         </button>
       </div>
@@ -119,8 +119,8 @@
     <div class="min-w-0 lg:flex-1">
       <div v-if="pending" class="flex flex-col items-center justify-center py-24">
         <div class="relative">
-          <div class="h-12 w-12 rounded-full border-[3px] border-emerald-100"></div>
-          <div class="absolute inset-0 h-12 w-12 animate-spin rounded-full border-[3px] border-transparent border-t-emerald-500"></div>
+          <div class="h-12 w-12 rounded-full border-[3px] border-court-line"></div>
+          <div class="absolute inset-0 h-12 w-12 animate-spin rounded-full border-[3px] border-transparent border-t-ball"></div>
         </div>
         <p class="mt-4 text-sm font-medium text-gray-500">Ieškoma laisvų aikštelių...</p>
       </div>
@@ -170,11 +170,11 @@
           </p>
           <div class="mt-4 flex flex-wrap justify-center gap-2">
             <button v-if="duration !== DURATIONS[0]" type="button" @click="duration = DURATIONS[0]"
-              class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+              class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
               Bandyti {{ DURATIONS[0] }} min
             </button>
             <button type="button" @click="clearFilters"
-              class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+              class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
               Išvalyti filtrus
             </button>
           </div>
@@ -226,7 +226,7 @@
           Išvalyti
         </button>
         <button type="button" @click="filtersOpen = false"
-          class="h-12 flex-1 rounded-xl bg-emerald-600 text-[15px] font-semibold text-white hover:bg-emerald-700">
+          class="h-12 flex-1 rounded-xl bg-ink text-[15px] font-semibold text-ball hover:bg-ink-soft">
           Rodyti {{ view.bookableCount }} {{ ltPlural(view.bookableCount, 'vietą', 'vietas', 'vietų') }}
         </button>
       </div>

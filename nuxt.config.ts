@@ -14,11 +14,15 @@ export default defineNuxtConfig({
       meta: [
         { name: 'description', content: 'Visos Lietuvos padelio aikštelių užimtumas vienoje vietoje' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'theme-color', content: '#059669' },
+        { name: 'theme-color', content: '#111827' },
         { 'http-equiv': 'X-Content-Type-Options', content: 'nosniff' },
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        // Display font for brand, venue names, day numbers and times
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap' },
       ],
       script: [
         {
@@ -36,8 +40,8 @@ export default defineNuxtConfig({
       name: 'Žaisk Padelį',
       short_name: 'Žaisk Padelį',
       description: 'Lietuvos padelio aikštelių užimtumas',
-      theme_color: '#059669',
-      background_color: '#f9fafb',
+      theme_color: '#111827',
+      background_color: '#f3f4f6',
       display: 'standalone',
       icons: [
         { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },

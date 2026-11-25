@@ -1,17 +1,17 @@
 <template>
   <article :class="['overflow-hidden rounded-2xl border bg-white shadow-sm',
-    selectedTime ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200/80']">
+    selectedTime ? 'border-ball ring-1 ring-ball' : 'border-court-line']">
     <!-- Summary row: toggles the per-court view -->
     <button type="button" :aria-expanded="expanded" :disabled="!!venue.error"
       class="flex w-full items-center gap-3 px-4 pb-2 pt-3 text-left disabled:cursor-default"
       @click="emit('toggle')">
       <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: accent }" aria-hidden="true"></span>
       <span class="min-w-0 flex-1">
-        <span class="block truncate text-[15px] font-semibold text-gray-900">{{ venue.name }}</span>
+        <span class="block truncate font-display text-[20px] font-semibold leading-tight text-ink">{{ venue.name }}</span>
         <span class="block truncate text-xs text-gray-600">{{ meta }}</span>
       </span>
       <template v-if="!venue.error">
-        <span class="shrink-0 text-[13px] font-semibold text-emerald-700 tabular-nums">
+        <span class="shrink-0 text-[13px] font-bold text-ink tabular-nums">
           {{ sessions.starts.length }} {{ ltPlural(sessions.starts.length, 'laikas', 'laikai', 'laikų') }}
         </span>
         <svg :class="['h-5 w-5 shrink-0 text-gray-500 transition-transform', expanded ? 'rotate-180' : '']"
@@ -30,7 +30,7 @@
         <div class="grid h-2 gap-px overflow-hidden rounded" :style="{ gridTemplateColumns: `repeat(${strip.length}, minmax(0, 1fr))` }">
           <span v-for="cell in strip" :key="cell.time" :class="STRIP_CLASS[cell.state]"></span>
         </div>
-        <div v-if="strip.length" class="mt-1 flex justify-between text-[10px] tabular-nums text-gray-500" aria-hidden="true">
+        <div v-if="strip.length" class="mt-1 flex justify-between text-[11px] tabular-nums text-gray-600" aria-hidden="true">
           <span v-for="label in stripLabels" :key="label">{{ label }}</span>
         </div>
       </div>
@@ -39,14 +39,16 @@
       <div v-if="!expanded" class="flex gap-1.5 px-4 pb-3 pt-2.5">
         <button v-for="s in sessions.starts.slice(0, PREVIEW)" :key="s.time" type="button"
           :aria-current="s.time === selectedTime ? 'true' : undefined"
-          :class="['h-11 min-w-0 flex-1 rounded-xl border text-sm font-semibold tabular-nums transition active:scale-[0.97] lg:max-w-[5rem]',
+          :class="['flex h-[3.25rem] min-w-0 flex-1 flex-col items-center justify-center rounded-xl border transition active:scale-[0.97] lg:max-w-[5rem]',
             s.time === selectedTime ? SELECTED : IDLE]"
           @click="emit('pick', s.time)">
-          {{ s.time }}
+          <span class="font-display text-[19px] font-bold leading-none tabular-nums">{{ s.time }}</span>
+          <span v-if="s.minPrice !== null" class="mt-0.5 text-[11px] font-medium leading-none"
+            :class="s.time === selectedTime ? 'text-ink/70' : 'text-ink-muted'">{{ formatPrice(s.minPrice) }}</span>
         </button>
         <button v-if="sessions.starts.length > PREVIEW" type="button"
           :aria-label="`Rodyti dar ${sessions.starts.length - PREVIEW} laikus`"
-          class="h-11 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50"
+          class="h-[3.25rem] shrink-0 rounded-xl border border-court-line bg-white px-3 text-sm font-semibold text-ink hover:border-ink/40"
           @click="emit('toggle')">
           +{{ sessions.starts.length - PREVIEW }}
         </button>
@@ -56,7 +58,7 @@
       <div v-else class="mt-2 divide-y divide-gray-100 border-t border-gray-100">
         <div v-for="{ court, starts } in courtsWithStarts" :key="court.id" class="px-4 py-3">
           <div class="mb-2 flex items-center gap-2">
-            <span class="text-sm font-semibold text-gray-800">{{ court.name }}</span>
+            <span class="text-sm font-semibold text-ink">{{ court.name }}</span>
             <CourtTags :court="court" />
           </div>
           <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-[repeat(auto-fill,4.5rem)]">
@@ -65,14 +67,14 @@
               :class="['flex min-h-[3rem] flex-col items-center justify-center rounded-xl border transition active:scale-[0.97]',
                 s.time === selectedTime ? SELECTED : IDLE]"
               @click="emit('pick', s.time)">
-              <span class="text-sm font-semibold tabular-nums">{{ s.time }}</span>
-              <span v-if="s.price !== null" class="text-[11px]" :class="s.time === selectedTime ? 'text-emerald-50' : 'text-emerald-700'">{{ formatPrice(s.price) }}</span>
+              <span class="font-display text-[19px] font-bold leading-none tabular-nums">{{ s.time }}</span>
+              <span v-if="s.price !== null" class="mt-0.5 text-[11px] font-medium leading-none" :class="s.time === selectedTime ? 'text-ink/70' : 'text-ink-muted'">{{ formatPrice(s.price) }}</span>
             </button>
           </div>
         </div>
         <div class="px-4 py-3">
           <a :href="venue.bookingUrl" target="_blank" rel="noopener"
-            class="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+            class="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-ball-text hover:text-ball-deep">
             Atidaryti klubo rezervacijas
             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
@@ -104,12 +106,12 @@ const props = defineProps<{
 const emit = defineEmits<{ toggle: []; pick: [time: string] }>()
 
 const PREVIEW = 4
-const IDLE = 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-const SELECTED = 'border-emerald-600 bg-emerald-600 text-white'
+const IDLE = 'border-ink bg-ink text-ball hover:bg-ink-soft'
+const SELECTED = 'border-ball bg-ball text-ink'
 const STRIP_CLASS: Record<StripCell['state'], string> = {
-  free: 'bg-emerald-500',
-  busy: 'bg-gray-200',
-  past: 'bg-gray-100',
+  free: 'bg-ink',
+  busy: 'bg-court-line',
+  past: 'bg-court-faint',
 }
 
 const accent = computed(() => venueInfo(props.venue.id)?.color ?? '#9ca3af')
