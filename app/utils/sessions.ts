@@ -1,5 +1,6 @@
 import type { Court } from '../../server/utils/types'
-import { toMinutes } from '../../server/utils/time'
+// Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
+import { fromMinutes, toMinutes } from '../../server/utils/time'
 
 /**
  * Bookable sessions: a start time where a court has enough back-to-back free
@@ -42,7 +43,8 @@ export interface VenueSessions {
 
 export type StripCell = { time: string; state: 'free' | 'busy' | 'past' }
 
-const SLOT_MIN = 30
+/** Every venue's grid is in 30-minute slots */
+export const SLOT_MIN = 30
 /** No venue opens this early, so earlier clock times are past midnight, at the end of the venue's day */
 const DAY_START_MIN = 4 * 60
 
@@ -72,7 +74,8 @@ function minPriceOf(prices: (number | null)[]): number | null {
  */
 export function courtSessionStarts(court: Court, durationMin: number, earliestMin = 0): CourtStart[] {
   const need = Math.max(1, Math.ceil(durationMin / SLOT_MIN))
-  const { slots } = court
+  // Scrapers don't all order after-midnight slots last, so put them in venue-day order first
+  const slots = [...court.slots].sort((a, b) => byDayTime(a.time, b.time))
   const out: CourtStart[] = []
   for (let i = 0; i + need <= slots.length; i++) {
     const start = dayMinutes(slots[i]!.time)
@@ -125,8 +128,7 @@ export function dayStrip(courts: Court[], nowMin: number): StripCell[] {
 
 /** "18:00" + 90 → "19:30" */
 export function sessionEnd(time: string, durationMin: number): string {
-  const end = (toMinutes(time) + durationMin) % 1440
-  return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`
+  return fromMinutes((toMinutes(time) + durationMin) % 1440)
 }
 
 /** €42, €40.50 */

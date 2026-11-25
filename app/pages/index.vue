@@ -178,30 +178,24 @@
     </div>
 
     <!-- ═══ SESSION SHEET ═══ -->
-    <BottomSheet :open="!!sheet" :title="sheet ? `${sheet.venue.name}, ${sheet.start.time}` : ''" @close="sheetKey = null">
-      <template v-if="sheet" #header>
-        <p class="text-[13px] text-gray-600">{{ sheet.venue.name }} · {{ selectedDayLabel }}</p>
-        <h2 class="text-[26px] font-bold tabular-nums text-gray-900">{{ sheet.start.time }} – {{ sessionEnd(sheet.start.time, duration) }}</h2>
+    <BottomSheet :open="!!sheet" :title="shownSheet ? `${shownSheet.venue.name}, ${shownSheet.start.time}` : ''" @close="sheetKey = null">
+      <template v-if="shownSheet" #header>
+        <p class="text-[13px] text-gray-600">{{ shownSheet.venue.name }} · {{ selectedDayLabel }}</p>
+        <h2 class="text-[26px] font-bold tabular-nums text-gray-900">{{ shownSheet.start.time }} – {{ sessionEnd(shownSheet.start.time, duration) }}</h2>
         <p class="text-sm text-gray-600">
-          {{ duration }} min · {{ sheet.start.courts.length }} {{ ltPlural(sheet.start.courts.length, 'laisvas kortas', 'laisvi kortai', 'laisvų kortų') }}
+          {{ duration }} min · {{ shownSheet.start.courts.length }} {{ ltPlural(shownSheet.start.courts.length, 'laisvas kortas', 'laisvi kortai', 'laisvų kortų') }}
         </p>
       </template>
-      <template v-if="sheet">
+      <template v-if="shownSheet">
         <ul class="space-y-2.5">
-          <li v-for="c in sheet.start.courts" :key="c.court.id"
+          <li v-for="c in shownSheet.start.courts" :key="c.court.id"
             class="flex items-center gap-3 rounded-2xl border border-gray-200 px-3.5 py-3">
             <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <span class="truncate text-[15px] font-semibold text-gray-900">{{ c.court.name }}</span>
-                <span :class="['shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                  c.court.type === 'singles' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700']">
-                  {{ c.court.type === 'singles' ? '1v1' : '2v2' }}
-                </span>
-              </div>
-              <span v-if="c.court.indoor !== undefined" class="text-[13px] text-gray-600">{{ c.court.indoor ? 'Vidaus' : 'Lauko' }}</span>
+              <span class="block truncate text-[15px] font-semibold text-gray-900">{{ c.court.name }}</span>
+              <span class="mt-0.5 flex items-center gap-2"><CourtTags :court="c.court" /></span>
             </div>
             <span v-if="c.price !== null" class="text-[17px] font-bold tabular-nums text-gray-900">{{ formatPrice(c.price) }}</span>
-            <a :href="sheet.venue.bookingUrl" target="_blank" rel="noopener"
+            <a :href="shownSheet.venue.bookingUrl" target="_blank" rel="noopener"
               class="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.97]">
               Rezervuoti
               <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
@@ -213,12 +207,12 @@
         <p class="mt-4 text-xs leading-relaxed text-gray-600">
           Rezervacija vyksta klubo svetainėje. Kaina už visą {{ duration }} min laiką pagal klubo kainoraštį ir gali skirtis.
         </p>
-        <div v-if="sheet.others.length" class="mt-4">
+        <div v-if="shownSheet.others.length" class="mt-4">
           <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Kiti laikai</p>
           <div class="grid grid-cols-4 gap-1.5">
-            <button v-for="s in sheet.others" :key="s.time" type="button"
+            <button v-for="s in shownSheet.others" :key="s.time" type="button"
               class="h-11 rounded-xl border border-gray-300 bg-white text-sm tabular-nums text-gray-800 transition hover:border-emerald-300"
-              @click="openSession(sheet.venue.id, s.time)">
+              @click="openSession(shownSheet.venue.id, s.time)">
               {{ s.time }}
             </button>
           </div>
@@ -294,7 +288,7 @@ function ltDateOffset(offsetDays: number): { dateStr: string; dayOfWeek: number;
 }
 
 // ── Remembered preferences (cookie, so SSR renders the same choices) ──
-type CourtType = 'doubles' | 'singles'
+type CourtType = Exclude<Court['type'], 'unknown'>
 interface Prefs { city: City | null; duration: Duration; type: CourtType | null; indoor: boolean | null }
 const DEFAULT_PREFS: Prefs = { city: 'Kaunas', duration: DEFAULT_DURATION, type: null, indoor: null }
 
@@ -394,13 +388,13 @@ async function refresh() {
 
 const venues = computed(() => data.value?.venues || [])
 
-// All possible 30-min times across all venues
+// Every 30-min time across all venues that hasn't started yet, for the "nuo" picker
 const allTimeSlots = computed(() => {
   const times = new Set<string>()
   for (const venue of venues.value)
     for (const court of venue.courts)
       for (const slot of court.slots)
-        times.add(slot.time)
+        if (dayMinutes(slot.time) >= nowMinutes.value) times.add(slot.time)
   return Array.from(times).sort(byDayTime)
 })
 
@@ -461,6 +455,10 @@ const sheet = computed(() => {
   const others = view.sessions.starts.filter(s => s.time !== key.time).slice(0, 8)
   return { venue: view.venue, start, others }
 })
+
+/** Last open sheet, kept after closing so the content doesn't blank out during the leave transition */
+const shownSheet = shallowRef<NonNullable<typeof sheet.value> | null>(null)
+watch(sheet, (s) => { if (s) shownSheet.value = s })
 
 function clearFilters() {
   fromTime.value = ''

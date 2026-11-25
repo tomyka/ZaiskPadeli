@@ -54,11 +54,7 @@
         <div v-for="{ court, starts } in courtsWithStarts" :key="court.id" class="px-4 py-3">
           <div class="mb-2 flex items-center gap-2">
             <span class="text-sm font-semibold text-gray-800">{{ court.name }}</span>
-            <span :class="['rounded-full px-2 py-0.5 text-[11px] font-semibold',
-              court.type === 'singles' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700']">
-              {{ court.type === 'singles' ? '1v1' : '2v2' }}
-            </span>
-            <span v-if="court.indoor !== undefined" class="text-xs text-gray-500">{{ court.indoor ? 'Vidaus' : 'Lauko' }}</span>
+            <CourtTags :court="court" />
           </div>
           <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
             <button v-for="s in starts" :key="s.time" type="button"
@@ -86,7 +82,7 @@
 <script setup lang="ts">
 import type { Court, Venue } from '~~/server/utils/types'
 import { venueInfo } from '~~/server/utils/venues'
-import { formatPrice, ltPlural, sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
+import { SLOT_MIN, formatPrice, ltPlural, sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
 
 const props = defineProps<{
   venue: Venue
@@ -127,6 +123,6 @@ const stripLabels = computed(() => {
   const s = props.strip
   if (!s.length) return []
   const mid = s[Math.floor(s.length / 2)]!.time
-  return [s[0]!.time, mid, sessionEnd(s[s.length - 1]!.time, 30)]
+  return [s[0]!.time, mid, sessionEnd(s[s.length - 1]!.time, SLOT_MIN)]
 })
 </script>

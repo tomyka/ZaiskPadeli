@@ -57,6 +57,12 @@ describe('after-midnight slots', () => {
     expect(courtSessionStarts(late, 90).map(s => s.time)).toEqual(['23:00', '23:30'])
   })
 
+  it('handles slots a scraper sorted as plain strings (00:00 first)', () => {
+    const unsorted = { ...late, slots: [...late.slots].sort((a, b) => a.time.localeCompare(b.time)) }
+    expect(unsorted.slots[0]!.time).toBe('00:00')
+    expect(courtSessionStarts(unsorted, 90).map(s => s.time)).toEqual(['23:00', '23:30'])
+  })
+
   it('treats after-midnight starts as later than the evening, not earlier', () => {
     expect(courtSessionStarts(late, 30, 20 * 60).map(s => s.time)).toEqual(['23:00', '23:30', '00:00', '00:30'])
     expect(venueSessions([late], 30).starts.map(s => s.time)).toEqual(['23:00', '23:30', '00:00', '00:30'])
