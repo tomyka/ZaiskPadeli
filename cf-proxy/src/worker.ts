@@ -21,6 +21,7 @@
 
 import { LOGIN_REJECTED, loginAndFetchGrid, type NTennisSite } from '../../server/utils/ntennis-fetch'
 import type { ScrapeReport } from '../../server/utils/types'
+import { fetchGoPadelDay } from '../../server/utils/gopadel-fetch'
 
 interface Env {
   PROXY_TOKEN: string
@@ -100,6 +101,16 @@ export default {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return json({ error: 'Invalid date, expected YYYY-MM-DD' }, 400)
     }
+    // GO Padel (Alytus): JSON API behind Cloudflare; returns { facility, availability }
+    if (site === 'gopadel') {
+      try {
+        return json(await fetchGoPadelDay(date))
+      } catch (err: any) {
+        console.warn(`[gopadel] fetch failed: ${err?.message}`)
+        return json({ error: err?.message ?? 'Unknown error' }, 502)
+      }
+    }
+
     const siteFor = SITES[site]
     if (!siteFor) {
       return json({ error: `Unknown site: ${site}` }, 400)

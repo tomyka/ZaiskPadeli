@@ -2,6 +2,7 @@ import type { Court } from './types'
 import { parseNTennisGrid } from './ntennis'
 import { assertGridHtml, fetchNTennisGrid } from './ntennis-fetch'
 import { currentMinutesFor } from './time'
+import { fetchViaProxy } from './cf-proxy'
 
 /**
  * Kauno Padelio Klubas — nTennis/nSoft platform
@@ -16,17 +17,8 @@ export async function scrapeKaunoPadelis(date: string, venue: { id: string }): P
 }
 
 async function fetchGridHtml(date: string): Promise<string> {
-  const proxyUrl = process.env.CF_PROXY_URL
-  const proxyToken = process.env.CF_PROXY_TOKEN
-
-  // Proxy configured: never fall back to direct fetch — it always fails from Vercel IPs.
-  if (proxyUrl && proxyToken) {
-    const resp = await fetch(`${proxyUrl}?site=kaunopadelis&date=${date}`, {
-      headers: { Authorization: `Bearer ${proxyToken}` },
-      signal: AbortSignal.timeout(20_000),
-    })
-    if (!resp.ok) throw new Error(`Proxy HTTP ${resp.status}`)
-    const data = (await resp.json()) as { html?: string; error?: string; status?: number; loginStatus?: number }
+  const data = await fetchViaProxy<{ html?: string; error?: string; status?: number; loginStatus?: number }>('kaunopadelis', date)
+  if (data) {
     if (!data.html) {
       throw new Error(`Proxy returned no HTML (status=${data.status}, login=${data.loginStatus}, error=${data.error})`)
     }

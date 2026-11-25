@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { parseGoPadel, type GoPadelAvailability } from '../../server/utils/scraper-gopadel'
+import { parseGoPadel } from '../../server/utils/scraper-gopadel'
+import type { GoPadelAvailability } from '../../server/utils/gopadel-fetch'
 
 const availability = JSON.parse(readFileSync(fileURLToPath(new URL('../fixtures/gopadel-availability.json', import.meta.url)), 'utf8')).data as GoPadelAvailability
 const facility = { id: 1, courts: [{ id: 1, name: '1 kortas' }, { id: 2, name: '2 GERDNESTA kortas' }] }
