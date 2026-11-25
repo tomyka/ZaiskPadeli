@@ -18,8 +18,6 @@ export interface NTennisGridOptions {
   idPrefix: string
   /** Minutes since midnight if the grid is for today, else -1 (see currentMinutesFor) */
   currentMinutes: number
-  /** Defaults to true — all known nTennis venues are indoor halls */
-  indoor?: boolean
   /** A1Padel wraps the court name in a <span> next to extra text — read only that span */
   nameFromSpan?: boolean
 }
@@ -81,7 +79,6 @@ export function parseNTennisGrid(html: string, opts: NTennisGridOptions): Court[
       id: `${opts.idPrefix}-${courtName.replace(/\s+/g, '-').toLowerCase()}`,
       name: courtName,
       type: courtName.toLowerCase().includes('vienet') ? 'singles' : 'doubles',
-      indoor: opts.indoor ?? true,
       slots,
     })
   })

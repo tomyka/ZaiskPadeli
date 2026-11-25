@@ -29,10 +29,12 @@ server/
     types.ts                 # shared TypeScript interfaces (Court, Venue, TimeSlot, City, etc.)
     cache.ts                 # Vercel KV cache (in-memory fallback for local dev)
     time.ts                  # Lithuanian timezone utilities — always use these
+    venues.ts                # VENUE REGISTRY — single source of venue metadata (pure data, also imported by the client)
+    scraper-all.ts           # binds each venue id to a scraper (SCRAPERS) + runner (Venue shell, deadline, error handling)
     ntennis.ts               # pure parser shared by all nTennis/nSoft grid venues (a1padel, kaunopadelis, tennisspace, vilniuspadel)
+    ntennis-fetch.ts         # nTennis guest-login + grid fetch
     parse.ts                 # small pure HTML helpers: parseEuro, parseBgColor, expandHourHeader
-    scraper-all.ts           # imports and runs all scrapers in parallel
-    scraper-*.ts             # one file per venue / platform
+    scraper-*.ts             # one file per venue / platform; each returns Court[]
 ```
 
 ### Request flow
@@ -61,30 +63,16 @@ nextDatesLT(n)      // → ["2026-05-28", "2026-05-29", ...]
 
 ### Adding a new venue
 
-**Option A — Winero platform** (preferred for winero.lt arenas): add a config entry to `WINERO_VENUES` in `scraper-winero.ts`. Required fields:
-
-```ts
-{
-  id: '<winero-arena-uuid>',    // from /api/arenas?sport=padel
-  venueId: 'shortid',          // snake_case, used as venue.id and in VENUE_COLORS
-  name: 'Display Name',
-  address: 'Street, City',
-  city: 'Vilnius',             // one of the City union type
-  bookingUrl: 'https://...',
-  indoor: true,                // or false; omit if unknown
-  skipCourts: ['ball machine'], // optional: substrings to skip (case-insensitive)
-}
-```
-
-No changes to `scraper-all.ts` needed — Winero venues are spread in automatically.
-
-**Option B — custom scraper**: create `server/utils/scraper-<name>.ts`, export an async function `scrape<Name>(date: string): Promise<Venue>`, then import and add it to `scraper-all.ts`.
+1. Add an entry to `VENUES` in `server/utils/venues.ts` (id, name, address, city, bookingUrl, indoor default, accent colour). This alone drives the venue card, filter pill colour and the city's "coming soon" badge.
+2. Bind a scraper in `SCRAPERS` in `server/utils/scraper-all.ts`. `SCRAPERS` is a `Record<VenueId, Scraper>`, so **typecheck fails until every registry venue has a scraper**.
+   - **Winero arena**: `myvenue: wineroScraper({ arenaId: '<uuid from /api/arenas?sport=padel>', skipCourts: ['kamuoliukų mašina', 'ball machine'] })`
+   - **nTennis/nSoft site**: a ~10-line file calling `fetchNTennisGrid({ baseUrl, placeId }, date)` then `parseNTennisGrid(html, { idPrefix: venue.id, ... })`
+   - **Custom**: create `server/utils/scraper-<name>.ts` exporting `scrape<Name>(date: string, venue: VenueInfo): Promise<Court[]>`. Build court ids as `${venue.id}-<platform court id>` (never hard-code the venue id). Keep parsing in a pure exported function and add a fixture test in `tests/`.
 
 ### Venue and Court IDs
 
 - `venue.id`: short lowercase identifier, e.g. `padelhub`, `kaunopadelis`, `harmonypark`
 - `court.id`: `${venueId}-${platformCourtId}` — must be stable across scrapes
-- Add a matching entry to `VENUE_COLORS` in `app/pages/index.vue` for accent color/pill styling
 
 ### Court interface
 
@@ -93,27 +81,18 @@ interface Court {
   id: string
   name: string
   type: 'doubles' | 'singles' | 'unknown'
-  indoor?: boolean    // true=indoor, false=outdoor, undefined=unknown (shown in both filter views)
+  indoor?: boolean    // omit to use the registry default; set per court only when it varies (e.g. K-Padel)
   slots: TimeSlot[]   // 30-min slots; { time: "HH:MM", available: boolean, price: number|null }
 }
 ```
 
-### Scraper error handling pattern
+### Scraper error handling
 
-Each scraper must **never throw** — set `venue.error` instead and return the partial venue. This ensures one broken venue doesn't fail the entire response:
-
-```ts
-try {
-  // ... fetch and parse ...
-} catch (err) {
-  venue.error = 'Failed to fetch XYZ data'
-}
-return venue
-```
+Scrapers **throw** on any failure (HTTP error, login failure, unexpected markup) with a descriptive message. The runner in `scraper-all.ts` catches it, logs `[venueId] scrape failed` with the detail, and sets a uniform Lithuanian `venue.error` — so one broken venue never fails the response. It also enforces a per-venue deadline and flags venues that return no courts. Don't build `Venue` objects or catch-and-swallow inside scrapers.
 
 ### Past slots (today only)
 
-When scraping today, mark past 30-min slots as `available: false`. Use `isDateTodayLT(date)` + `nowLTMinutes()` and skip slots where `slotEnd <= currentMinutes`.
+When scraping today, mark finished slots unavailable: `const now = currentMinutesFor(date)` then `available = ... && !isSlotOver(time, now)`.
 
 ### Winero scraper internals
 

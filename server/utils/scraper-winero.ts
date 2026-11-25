@@ -1,4 +1,4 @@
-import type { City, Venue, TimeSlot } from './types'
+import type { Court, TimeSlot } from './types'
 import { currentMinutesFor, dayOfWeek, halfHourSlots, isSlotOver, toEndMinutes, toMinutes } from './time'
 
 /**
@@ -62,16 +62,9 @@ export function getPriceForSlot(court: WineroCourt, date: string, slotTime: stri
 }
 
 export interface WineroArenaConfig {
-  id: string
-  venueId: string
-  name: string
-  address: string
-  /** Defaults to Vilnius */
-  city?: City
-  bookingUrl: string
-  /** Whether courts are indoors (true) or outdoors (false). Omit for unknown. */
-  indoor?: boolean
-  /** Court name substrings to skip (case-insensitive) */
+  /** Winero arena UUID */
+  arenaId: string
+  /** Court name substrings to skip (case-insensitive), e.g. ball machines */
   skipCourts?: string[]
 }
 
@@ -81,27 +74,14 @@ async function getJson(url: string): Promise<any> {
   return res.json()
 }
 
-export async function scrapeWineroArena(config: WineroArenaConfig, date: string): Promise<Venue> {
-  const venue: Venue = {
-    id: config.venueId,
-    name: config.name,
-    address: config.address,
-    city: config.city ?? 'Vilnius',
-    bookingUrl: config.bookingUrl,
-    courts: [],
-    lastUpdated: new Date().toISOString(),
-  }
-
-  try {
+/** Build a scraper for one Winero arena. Court ids are prefixed with the venue id. */
+export function wineroScraper(config: WineroArenaConfig) {
+  return async (date: string, venue: { id: string }): Promise<Court[]> => {
     const [arenaData, availData] = await Promise.all([
-      getJson(`${WINERO_BASE}/api/arenas/${config.id}`),
-      getJson(`${WINERO_BASE}/api/bookings/public-availability?arena_id=${config.id}&date=${date}`),
+      getJson(`${WINERO_BASE}/api/arenas/${config.arenaId}`),
+      getJson(`${WINERO_BASE}/api/bookings/public-availability?arena_id=${config.arenaId}&date=${date}`),
     ])
-
-    if (!arenaData?.id) {
-      venue.error = 'Arena not found'
-      return venue
-    }
+    if (!arenaData?.id) throw new Error('Arena not found')
 
     // Booked ranges per court
     const bookedMap = new Map<string, Array<{ start: number; end: number }>>()
@@ -112,91 +92,28 @@ export async function scrapeWineroArena(config: WineroArenaConfig, date: string)
     }
 
     const hours = parseOpeningHours(arenaData.opening_hours ?? '', date)
-    if (!hours) {
-      venue.error = 'Could not parse opening hours'
-      return venue
-    }
+    if (!hours) throw new Error('Could not parse opening hours')
 
     const slotTimes = halfHourSlots(hours.open, hours.close)
     const currentMinutes = currentMinutesFor(date)
     const courts: WineroCourt[] = arenaData.courts ?? []
 
-    for (const court of courts) {
-      const name = court.name.toLowerCase()
-      if (config.skipCourts?.some(s => name.includes(s.toLowerCase()))) continue
-
-      const booked = bookedMap.get(court.id) ?? []
-      const slots: TimeSlot[] = slotTimes.map(time => {
-        const slotStart = toMinutes(time)
-        const slotEnd = slotStart + 30
-        const isBooked = booked.some(b => b.start < slotEnd && b.end > slotStart)
-        const available = !isSlotOver(time, currentMinutes) && !isBooked
-        return { time, available, price: available ? getPriceForSlot(court, date, time) : null }
+    return courts
+      .filter(court => !config.skipCourts?.some(s => court.name.toLowerCase().includes(s.toLowerCase())))
+      .map(court => {
+        const booked = bookedMap.get(court.id) ?? []
+        const slots: TimeSlot[] = slotTimes.map(time => {
+          const slotStart = toMinutes(time)
+          const isBooked = booked.some(b => b.start < slotStart + 30 && b.end > slotStart)
+          const available = !isSlotOver(time, currentMinutes) && !isBooked
+          return { time, available, price: available ? getPriceForSlot(court, date, time) : null }
+        })
+        return {
+          id: `${venue.id}-${court.id}`,
+          name: court.name,
+          type: court.name.toLowerCase().includes('single') ? 'singles' as const : 'doubles' as const,
+          slots,
+        }
       })
-
-      venue.courts.push({
-        id: `${config.venueId}-${court.id}`,
-        name: court.name,
-        type: name.includes('single') ? 'singles' : 'doubles',
-        indoor: config.indoor,
-        slots,
-      })
-    }
-  } catch (err) {
-    console.warn(`[${config.venueId}] scrape failed:`, (err as Error).message)
-    venue.error = `Failed to fetch ${config.name} data`
   }
-
-  return venue
 }
-
-// ─── Venue configurations ─────────────────────────────────────────────────────
-
-export const WINERO_VENUES: WineroArenaConfig[] = [
-  {
-    id: 'a77b94b4-46c0-4e7b-b69d-2ed700d3e483',
-    venueId: 'zirmunai',
-    name: 'Žirmūnų Padelio Arena',
-    address: 'Žirmūnų g. 139, Vilnius',
-    bookingUrl: 'https://www.winero.lt/arena/irmn-padelio-arena',
-    indoor: true,
-  },
-  {
-    id: '6526ba41-0328-4562-9da0-c8708f2e42ec',
-    venueId: 'padelfactory',
-    name: 'Padel Factory',
-    address: 'Savanorių pr. 180, Vilnius',
-    bookingUrl: 'https://www.winero.lt/arena/padel-factory',
-    indoor: true,
-    skipCourts: ['kamuoliukų mašina', 'ball machine'],
-  },
-  // ── Panevėžys ────────────────────────────────────────────────────────────────
-  {
-    id: '887c031b-06a6-4799-8355-fb2685f2b508',
-    venueId: 'bajada',
-    name: 'BAJADA Padelio Kortai',
-    address: 'Elektronikos g. 64, Panevėžys',
-    city: 'Panevėžys',
-    bookingUrl: 'https://www.panevezyspadel.lt',
-    indoor: true,
-  },
-  {
-    id: 'a582ca8a-ef5a-45ba-b50e-915d1b2b71bd',
-    venueId: 'aukstaitijos',
-    name: 'Aukštaitijos Padelio Klubas',
-    address: 'Parko g. 16, Panevėžys',
-    city: 'Panevėžys',
-    bookingUrl: 'https://www.winero.lt/arenas',
-    indoor: true,
-  },
-  // ── Kaunas apskritis ─────────────────────────────────────────────────────────
-  {
-    id: '41bb5931-4468-46e7-96ad-2c958240da9c',
-    venueId: 'harmonypark',
-    name: 'Harmony Park',
-    address: 'Vazgaikiemis, Prienų raj.',
-    city: 'Kaunas',
-    bookingUrl: 'https://www.winero.lt/arena/harmony-park',
-    indoor: false,
-  },
-]

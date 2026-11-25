@@ -1,0 +1,174 @@
+import type { City } from './types'
+
+/**
+ * Single source of truth for every venue shown in the app.
+ *
+ * Pure data — no scraper imports — so the client can import it too
+ * (colours, active cities). Scrapers are bound to these ids in scraper-all.ts,
+ * where the type system enforces that every venue here has a scraper.
+ *
+ * Order here is the order venues are listed in the UI.
+ *
+ * Adding a venue:
+ *   1. add an entry below
+ *   2. add its scraper to SCRAPERS in scraper-all.ts (typecheck fails until you do)
+ */
+
+export interface VenueInfo {
+  id: string
+  name: string
+  address: string
+  /** City filter the venue is listed under (venues just outside a city use the nearest one) */
+  city: City
+  bookingUrl: string
+  /** Default for courts whose scraper doesn't say; per-court values win */
+  indoor?: boolean
+  /** Accent colour (card border + active filter pill) */
+  color: string
+}
+
+export const VENUES = [
+  // ── Kaunas ──────────────────────────────────────────────────────────────────
+  {
+    id: 'padelhub',
+    name: 'Balcia Padel Hub',
+    address: 'B. Brazdžionio g. 25, Kaunas',
+    city: 'Kaunas',
+    bookingUrl: 'https://savpadelhub.mokesta.lt/',
+    indoor: true,
+    color: '#3b82f6',
+  },
+  {
+    id: 'padelhouse',
+    name: 'Padel House',
+    address: 'A. Juozapavičiaus pr. 3, Kaunas',
+    city: 'Kaunas',
+    bookingUrl: 'https://rezervacija.padelhouse.lt/',
+    indoor: true,
+    color: '#f97316',
+  },
+  {
+    id: 'tennisspace',
+    name: 'Tennis Space',
+    address: 'Islandijos pl. 9C, Kaunas',
+    city: 'Kaunas',
+    bookingUrl: 'https://savitarna.tennisspace.lt/reservation/short?iPlaceId=4',
+    indoor: true,
+    color: '#22c55e',
+  },
+  {
+    id: 'kaunopadelis',
+    name: 'Kauno Padelio Klubas',
+    address: 'Lyderystės g. 6, Kaunas',
+    city: 'Kaunas',
+    bookingUrl: 'https://savitarna.kaunopadelis.lt/reservation/short',
+    indoor: true,
+    color: '#eab308',
+  },
+  // ── Vilnius ─────────────────────────────────────────────────────────────────
+  {
+    id: 'vilniuspadel',
+    name: 'Vilnius Padel Arena',
+    address: 'Žygio g. 97A, Vilnius',
+    city: 'Vilnius',
+    bookingUrl: 'https://rezervacijos.vilniuspadel.lt/reservation/short',
+    indoor: true,
+    color: '#8b5cf6',
+  },
+  // ── Klaipėda ────────────────────────────────────────────────────────────────
+  {
+    id: 'a1padel',
+    name: 'A1Padel Klaipėda',
+    address: 'Smilgų g. 5, Klaipėda',
+    city: 'Klaipėda',
+    bookingUrl: 'https://savitarna.a1padel.lt/reservation/short',
+    indoor: true,
+    color: '#06b6d4',
+  },
+  // ── Panevėžys ───────────────────────────────────────────────────────────────
+  {
+    id: 'simonas',
+    name: 'Simonas Tennis Club',
+    address: 'Verslo I g. 7, Liūdynė, Panevėžys',
+    city: 'Panevėžys',
+    bookingUrl: 'https://simonastennis.lt/rezervacija',
+    indoor: true,
+    color: '#ec4899',
+  },
+  {
+    id: 'kpadel',
+    name: 'K-Padel',
+    address: 'Ramygalos g. 149E, Panevėžys',
+    city: 'Panevėžys',
+    bookingUrl: 'https://app.moove.lt/padel/reservation',
+    // indoor decided per court ("laukas" = outdoor)
+    color: '#6366f1',
+  },
+  // ── Kaunas region (listed under Kaunas) ────────────────────────────────────
+  {
+    id: 'prienuose',
+    name: 'Padelis Prienuose',
+    address: 'Ropių g. 44, Prienai',
+    city: 'Kaunas',
+    bookingUrl: 'https://padelisprienuose.lt/booking',
+    indoor: false,
+    color: '#f59e0b',
+  },
+  // ── Winero.lt venues ───────────────────────────────────────────────────────
+  {
+    id: 'zirmunai',
+    name: 'Žirmūnų Padelio Arena',
+    address: 'Žirmūnų g. 139, Vilnius',
+    city: 'Vilnius',
+    bookingUrl: 'https://www.winero.lt/arena/irmn-padelio-arena',
+    indoor: true,
+    color: '#14b8a6',
+  },
+  {
+    id: 'padelfactory',
+    name: 'Padel Factory',
+    address: 'Savanorių pr. 180, Vilnius',
+    city: 'Vilnius',
+    bookingUrl: 'https://www.winero.lt/arena/padel-factory',
+    indoor: true,
+    color: '#f43f5e',
+  },
+  {
+    id: 'bajada',
+    name: 'BAJADA Padelio Kortai',
+    address: 'Elektronikos g. 64, Panevėžys',
+    city: 'Panevėžys',
+    bookingUrl: 'https://www.panevezyspadel.lt',
+    indoor: true,
+    color: '#0ea5e9',
+  },
+  {
+    id: 'aukstaitijos',
+    name: 'Aukštaitijos Padelio Klubas',
+    address: 'Parko g. 16, Panevėžys',
+    city: 'Panevėžys',
+    bookingUrl: 'https://www.winero.lt/arenas',
+    indoor: true,
+    color: '#a855f7',
+  },
+  {
+    id: 'harmonypark',
+    name: 'Harmony Park',
+    address: 'Vazgaikiemis, Prienų raj.',
+    city: 'Kaunas',
+    bookingUrl: 'https://www.winero.lt/arena/harmony-park',
+    indoor: false,
+    color: '#84cc16',
+  },
+] as const satisfies readonly VenueInfo[]
+
+export type VenueId = (typeof VENUES)[number]['id']
+
+const BY_ID = new Map<string, VenueInfo>(VENUES.map(v => [v.id, v]))
+
+export function venueInfo(id: string): VenueInfo | undefined {
+  return BY_ID.get(id)
+}
+
+/** Cities that have at least one venue — the rest are shown as "coming soon" */
+export const ACTIVE_CITIES: ReadonlySet<City> = new Set(VENUES.map(v => v.city))

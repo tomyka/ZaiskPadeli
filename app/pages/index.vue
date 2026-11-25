@@ -51,7 +51,7 @@
               : 'bg-white border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600'
           ]">
           {{ city }}
-          <span v-if="city !== 'Kaunas' && city !== 'Vilnius' && city !== 'Klaipėda' && city !== 'Panevėžys'"
+          <span v-if="!ACTIVE_CITIES.has(city)"
             class="ml-0.5 rounded-full bg-white/20 px-1 text-[8px] font-bold uppercase tracking-wider opacity-60">greitai</span>
         </button>
       </div>
@@ -129,8 +129,9 @@
           @click="activeVenue = activeVenue === venue.id ? null : venue.id"
           :class="['rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-200',
             activeVenue === venue.id
-              ? venueStyle(venue.id).activePill
-              : 'border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:border-gray-300']">
+              ? ''
+              : 'border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:border-gray-300']"
+          :style="activeVenue === venue.id ? activePillStyle(venue.id) : undefined">
           {{ venue.name }}
         </button>
       </div>
@@ -322,6 +323,7 @@
 <script setup lang="ts">
 import type { AvailabilityResponse, Venue, Court, City } from '~~/server/utils/types'
 import { CITIES, CITY_COORDS } from '~~/server/utils/types'
+import { ACTIVE_CITIES, venueInfo } from '~~/server/utils/venues'
 
 const LT_TZ = 'Europe/Vilnius'
 
@@ -521,27 +523,19 @@ function detectCity() {
   )
 }
 
-// Accent colors per venue (left border + pill)
-const VENUE_COLORS: Record<string, { border: string; activePill: string }> = {
-  padelhub:     { border: '#3b82f6', activePill: 'border-blue-400 bg-blue-50 text-blue-700' },
-  padelhouse:   { border: '#f97316', activePill: 'border-orange-400 bg-orange-50 text-orange-700' },
-  tennisspace:  { border: '#22c55e', activePill: 'border-green-400 bg-green-50 text-green-700' },
-  kaunopadelis: { border: '#eab308', activePill: 'border-yellow-400 bg-yellow-50 text-yellow-700' },
-  vilniuspadel: { border: '#8b5cf6', activePill: 'border-violet-400 bg-violet-50 text-violet-700' },
-  zirmunai:     { border: '#14b8a6', activePill: 'border-teal-400 bg-teal-50 text-teal-700' },
-  padelfactory: { border: '#f43f5e', activePill: 'border-rose-400 bg-rose-50 text-rose-700' },
-  a1padel:      { border: '#06b6d4', activePill: 'border-cyan-400 bg-cyan-50 text-cyan-700' },
-  harmonypark:  { border: '#84cc16', activePill: 'border-lime-400 bg-lime-50 text-lime-700' },
-  prienuose:    { border: '#f59e0b', activePill: 'border-amber-400 bg-amber-50 text-amber-700' },
-}
-
+// Accent colour per venue comes from the registry (server/utils/venues.ts)
 function venueAccentColor(id: string): string {
-  return VENUE_COLORS[id]?.border ?? '#9ca3af'
+  return venueInfo(id)?.color ?? '#9ca3af'
 }
 
-function venueStyle(id: string) {
-  const v = VENUE_COLORS[id]
-  return { activePill: v?.activePill ?? 'border-gray-400 bg-gray-50 text-gray-700' }
+/** Active venue pill: tinted background, accent border, darkened accent text */
+function activePillStyle(id: string) {
+  const color = venueAccentColor(id)
+  return {
+    borderColor: color,
+    backgroundColor: `color-mix(in srgb, ${color} 10%, white)`,
+    color: `color-mix(in srgb, ${color} 65%, black)`,
+  }
 }
 
 function formatTime(iso: string) {

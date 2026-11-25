@@ -1,5 +1,5 @@
 import { load } from 'cheerio'
-import type { Venue, Court, TimeSlot } from './types'
+import type { Court, TimeSlot } from './types'
 import { expandHourHeader, parseBgColor, parseEuro } from './parse'
 import { currentMinutesFor, isSlotOver } from './time'
 
@@ -11,7 +11,7 @@ import { currentMinutesFor, isSlotOver } from './time'
  */
 
 /** Pure parser for the Padel House timetable page (exported for tests). */
-export function parsePadelHouseHtml(html: string, currentMinutes: number): Court[] {
+export function parsePadelHouseHtml(html: string, currentMinutes: number, idPrefix: string): Court[] {
   const $ = load(html)
 
   // Colour → hourly price. Current (possibly promo) price: strip .old-price first.
@@ -52,35 +52,17 @@ export function parsePadelHouseHtml(html: string, currentMinutes: number): Court
   })
 
   return [...courtsByName].map(([name, slots], i) => ({
-    id: `padelhouse-${i + 1}`,
+    id: `${idPrefix}-${i + 1}`,
     name,
     type: 'doubles',
-    indoor: true,
     slots,
   }))
 }
 
-export async function scrapePadelHouse(date: string): Promise<Venue> {
-  const venue: Venue = {
-    id: 'padelhouse',
-    name: 'Padel House',
-    address: 'A. Juozapavičiaus pr. 3, Kaunas',
-    city: 'Kaunas',
-    bookingUrl: 'https://rezervacija.padelhouse.lt/',
-    courts: [],
-    lastUpdated: new Date().toISOString(),
-  }
-
-  try {
-    const html = await $fetch<string>(`https://rezervacija.padelhouse.lt/?date=${date}`, {
-      timeout: 15000,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PadelKaunas/1.0)' },
-    })
-    venue.courts = parsePadelHouseHtml(html, currentMinutesFor(date))
-  } catch (err) {
-    console.warn('[padelhouse] scrape failed:', (err as Error).message)
-    venue.error = 'Failed to fetch Padel House data'
-  }
-
-  return venue
+export async function scrapePadelHouse(date: string, venue: { id: string }): Promise<Court[]> {
+  const html = await $fetch<string>(`https://rezervacija.padelhouse.lt/?date=${date}`, {
+    timeout: 15000,
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PadelKaunas/1.0)' },
+  })
+  return parsePadelHouseHtml(html, currentMinutesFor(date), venue.id)
 }

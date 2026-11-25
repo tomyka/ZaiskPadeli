@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { parseNTennisGrid } from '../../server/utils/ntennis'
 import { parsePadelHouseHtml } from '../../server/utils/scraper-padelhouse'
-import { getPriceForSlot, parseOpeningHours, WINERO_VENUES, type WineroCourt } from '../../server/utils/scraper-winero'
+import { getPriceForSlot, parseOpeningHours, type WineroCourt } from '../../server/utils/scraper-winero'
 
 const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url)), 'utf8')
 
@@ -12,7 +12,7 @@ describe('parseNTennisGrid', () => {
 
   it('maps cells to half-hour slots with legend prices (per hour / 2)', () => {
     const [court1] = parseNTennisGrid(html, { idPrefix: 'ts', currentMinutes: -1 })
-    expect(court1).toMatchObject({ id: 'ts-kortas-1-dvejetų', type: 'doubles', indoor: true })
+    expect(court1).toMatchObject({ id: 'ts-kortas-1-dvejetų', type: 'doubles' })
     expect(court1!.slots).toEqual([
       { time: '07:00', available: true, price: 10 },
       { time: '07:30', available: false, price: null },
@@ -50,7 +50,7 @@ describe('parsePadelHouseHtml', () => {
   const html = fixture('padelhouse.html')
 
   it('parses the desktop table only, using current (non-promo-struck) decimal prices', () => {
-    const courts = parsePadelHouseHtml(html, -1)
+    const courts = parsePadelHouseHtml(html, -1, 'padelhouse')
     expect(courts).toHaveLength(1)
     expect(courts[0]).toMatchObject({ id: 'padelhouse-1', name: 'Kortas 1' })
     expect(courts[0]!.slots).toEqual([
@@ -63,7 +63,7 @@ describe('parsePadelHouseHtml', () => {
 
   it('marks past slots unavailable for today', () => {
     // 21:10 — the 20:00 slot has ended, the 21:00 slot is still in progress
-    const slots = parsePadelHouseHtml(html, 21 * 60 + 10)[0]!.slots
+    const slots = parsePadelHouseHtml(html, 21 * 60 + 10, 'padelhouse')[0]!.slots
     expect(slots.map(s => s.available)).toEqual([false, false, true, true])
   })
 })
@@ -110,12 +110,5 @@ describe('Winero helpers', () => {
 
   it('returns null for days without a period', () => {
     expect(getPriceForSlot(court, '2026-11-24', '10:00')).toBeNull()
-  })
-})
-
-describe('venue configuration', () => {
-  it('Winero venue ids are unique', () => {
-    const ids = WINERO_VENUES.map(v => v.venueId)
-    expect(new Set(ids).size).toBe(ids.length)
   })
 })
