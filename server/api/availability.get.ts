@@ -1,5 +1,4 @@
-import { getCached } from '../utils/cache'
-import { refreshAvailability } from '../utils/refresh'
+import { useAvailabilityStore } from '../utils/availability-store'
 import { MAX_DAYS_AHEAD, addDays, isValidIsoDate, todayLT } from '../utils/time'
 import type { AvailabilityResponse } from '../utils/types'
 
@@ -18,14 +17,5 @@ export default defineEventHandler(async (event): Promise<AvailabilityResponse> =
     throw createError({ statusCode: 400, message: 'Date out of range' })
   }
 
-  // 1. Serve from KV cache if fresh
-  const cached = await getCached(date)
-  if (cached && !cached.stale) {
-    return { ...cached.data, fromCache: true, cacheAgeSeconds: cached.ageSeconds }
-  }
-
-  // 2. Scrape (shared with concurrent requests and the cron); venues that fail
-  //    keep their last good courts from the stale entry
-  const { data } = await refreshAvailability(date, cached?.data)
-  return data
+  return useAvailabilityStore().get(date)
 })

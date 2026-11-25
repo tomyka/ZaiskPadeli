@@ -1,5 +1,4 @@
-import { getCached } from '../../utils/cache'
-import { refreshAvailability } from '../../utils/refresh'
+import { useAvailabilityStore } from '../../utils/availability-store'
 import { nextDatesLT } from '../../utils/time'
 import type { ScrapeReport } from '../../utils/types'
 
@@ -10,7 +9,7 @@ import type { ScrapeReport } from '../../utils/types'
  * Protected by CRON_SECRET to prevent external abuse.
  *
  * Response per date: `failed` = venues showing an error, `carried` = venues whose scrape
- * failed but still show their last good data (see carryOverFailedVenues).
+ * failed but still show their last good data (see availability-store.ts).
  */
 export default defineEventHandler(async (event) => {
   const authHeader = getHeader(event, 'authorization')
@@ -29,8 +28,7 @@ export default defineEventHandler(async (event) => {
 
   for (const date of dates) {
     const start = Date.now()
-    const previous = await getCached(date)
-    const { data, carried } = await refreshAvailability(date, previous?.data)
+    const { data, carried } = await useAvailabilityStore().refresh(date)
     const failed = data.venues.filter(v => v.error).map(v => v.id)
     results[date] = { venues: data.venues.length, errors: failed.length, failed, carried, ms: Date.now() - start }
   }

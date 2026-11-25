@@ -40,13 +40,13 @@ server/
 
 ### Request flow
 
-`index.vue` fetches `/api/availability?date=YYYY-MM-DD` → Nitro handler checks Vercel KV cache (fresh = <5 min, stale = <60 min) → on miss/stale, `scrapeAllVenues()` runs all scrapers in parallel → result stored in KV → returned to client. The cf-proxy Worker's cron trigger hits `/api/cron/scrape` every 5 minutes to pre-warm the cache for today and the next 2 days. Every refresh goes through `refreshAvailability()` (`server/utils/refresh.ts`): a venue whose scrape fails keeps its last good courts while they are under 60 min old (judged by the venue's own `lastUpdated`).
+`index.vue` fetches `/api/availability?date=YYYY-MM-DD` → the availability store (`server/utils/availability-store.ts`, `useAvailabilityStore().get(date)`) serves stored data under 5 min old, otherwise `refresh(date)` runs `scrapeAllVenues()` (one shared scrape per date per instance) and stores the result. The cf-proxy Worker's cron trigger hits `/api/cron/scrape` every 5 minutes to pre-warm the cache for today and the next 2 days. Every refresh goes through the store: a venue whose scrape fails keeps its last good courts while they are under 60 min old (judged by the venue's own `lastUpdated`).
 
 ### Cache
 
 - **Fresh** (< 5 min): served directly from KV, no re-scrape
 - **Stale** (5–60 min): the request re-scrapes (blocking); venues that fail keep their courts from the stale entry
-- **Local dev**: no KV credentials → in-memory `Map` fallback (auto-detected by `isKVAvailable()`)
+- **Local dev**: no KV credentials → in-memory storage adapter (`useAvailabilityStore()` picks the adapter; tests build their own store with `createAvailabilityStore`)
 - Env vars required in prod: `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `CRON_SECRET`
 
 ## Key Conventions
