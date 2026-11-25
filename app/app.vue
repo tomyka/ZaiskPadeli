@@ -5,7 +5,7 @@
 
     <!-- Header -->
     <header class="sticky top-0 z-50 border-b border-gray-200/60 bg-white/90 shadow-sm backdrop-blur-xl shrink-0">
-      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+      <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8">
         <div class="flex h-14 items-center justify-between">
           <a href="/" class="flex items-center gap-2.5 group select-none">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 32" class="h-7 w-5 shrink-0 transition-transform duration-300 group-hover:rotate-[-8deg]" aria-hidden="true">
@@ -39,7 +39,7 @@
 
     <!-- Footer -->
     <footer class="border-t border-gray-200/50 bg-white/50 py-5 shrink-0">
-      <div class="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-gray-400">
+      <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-7xl lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-gray-400">
         <span>© {{ new Date().getFullYear() }} Žaisk Padelį</span>
         <span>Duomenys atnaujinami kas 5 min · Kaina už 30 min</span>
       </div>

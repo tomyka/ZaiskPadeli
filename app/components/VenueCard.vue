@@ -1,5 +1,6 @@
 <template>
-  <article class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm">
+  <article :class="['overflow-hidden rounded-2xl border bg-white shadow-sm',
+    selectedTime ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-gray-200/80']">
     <!-- Summary row: toggles the per-court view -->
     <button type="button" :aria-expanded="expanded" :disabled="!!venue.error"
       class="flex w-full items-center gap-3 px-4 pb-2 pt-3 text-left disabled:cursor-default"
@@ -37,7 +38,9 @@
       <!-- Collapsed: next few start times -->
       <div v-if="!expanded" class="flex gap-1.5 px-4 pb-3 pt-2.5">
         <button v-for="s in sessions.starts.slice(0, PREVIEW)" :key="s.time" type="button"
-          class="h-11 flex-1 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold tabular-nums text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.97]"
+          :aria-pressed="s.time === selectedTime"
+          :class="['h-11 min-w-0 flex-1 rounded-xl border text-sm font-semibold tabular-nums transition active:scale-[0.97] lg:max-w-[5rem]',
+            s.time === selectedTime ? SELECTED : IDLE]"
           @click="emit('pick', s.time)">
           {{ s.time }}
         </button>
@@ -56,12 +59,14 @@
             <span class="text-sm font-semibold text-gray-800">{{ court.name }}</span>
             <CourtTags :court="court" />
           </div>
-          <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-1.5">
             <button v-for="s in starts" :key="s.time" type="button"
-              class="flex min-h-[3rem] flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 transition hover:bg-emerald-100 active:scale-[0.97]"
+              :aria-pressed="s.time === selectedTime"
+              :class="['flex min-h-[3rem] flex-col items-center justify-center rounded-xl border transition active:scale-[0.97]',
+                s.time === selectedTime ? SELECTED : IDLE]"
               @click="emit('pick', s.time)">
               <span class="text-sm font-semibold tabular-nums">{{ s.time }}</span>
-              <span v-if="s.price !== null" class="text-[11px] text-emerald-700">{{ formatPrice(s.price) }}</span>
+              <span v-if="s.price !== null" class="text-[11px]" :class="s.time === selectedTime ? 'text-emerald-50' : 'text-emerald-700'">{{ formatPrice(s.price) }}</span>
             </button>
           </div>
         </div>
@@ -93,10 +98,14 @@ const props = defineProps<{
   strip: StripCell[]
   duration: number
   expanded: boolean
+  /** Start time whose details are open beside the list (desktop), highlighted here */
+  selectedTime?: string | null
 }>()
 const emit = defineEmits<{ toggle: []; pick: [time: string] }>()
 
 const PREVIEW = 4
+const IDLE = 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+const SELECTED = 'border-emerald-600 bg-emerald-600 text-white'
 const STRIP_CLASS: Record<StripCell['state'], string> = {
   free: 'bg-emerald-500',
   busy: 'bg-gray-200',

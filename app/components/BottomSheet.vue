@@ -10,12 +10,8 @@
           <div class="flex justify-center pt-2 sm:hidden" aria-hidden="true">
             <span class="h-1.5 w-10 rounded-full bg-gray-300"></span>
           </div>
-          <header class="flex items-start gap-3 px-5 pt-3">
-            <div class="min-w-0 flex-1">
-              <slot name="header">
-                <h2 class="text-xl font-bold text-gray-900">{{ title }}</h2>
-              </slot>
-            </div>
+          <header :class="['flex items-start gap-3 px-5 pt-3', showTitle ? '' : 'absolute right-0 top-2 z-10']">
+            <h2 v-if="showTitle" class="min-w-0 flex-1 text-xl font-bold text-gray-900">{{ title }}</h2>
             <button type="button" aria-label="Uždaryti" @click="emit('close')"
               class="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
@@ -33,7 +29,8 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ open: boolean; title: string }>()
+/** `title` names the dialog; set `showTitle` false when the content brings its own heading */
+const props = withDefaults(defineProps<{ open: boolean; title: string; showTitle?: boolean }>(), { showTitle: true })
 const emit = defineEmits<{ close: [] }>()
 const panel = ref<HTMLElement | null>(null)
 
