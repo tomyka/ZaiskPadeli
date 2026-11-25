@@ -2,6 +2,13 @@ name = "padelis-proxy"
 main = "src/worker.ts"
 compatibility_date = "2025-01-01"
 
+# Run near Lithuania, not at the caller's edge. Vercel (arn1) enters Cloudflare in
+# Stockholm, and kaunopadelis.lt answers Worker requests from there with a
+# "Just a moment..." challenge (403); from a Warsaw-area location it serves the grid.
+[placement]
+mode = "targeted"
+region = "gcp:europe-central2"
+
 [vars]
 # Secrets — set via `wrangler secret put <NAME>`, never committed here:
 #   PROXY_TOKEN

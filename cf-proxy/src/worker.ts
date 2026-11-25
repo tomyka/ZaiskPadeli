@@ -71,6 +71,12 @@ export default {
 
     try {
       const { html, status, loginStatus, loginRejected } = await loginAndFetchGrid(siteFor(env), date)
+      if (!html.includes('booking-slot')) {
+        // Visible in `wrangler tail` — the Vercel side only sees a generic venue error
+        const colo = (request as { cf?: { colo?: string } }).cf?.colo
+        const title = html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim()
+        console.warn(`[${site}] unusable grid: status=${status} login=${loginStatus} rejected=${loginRejected} len=${html.length} colo=${colo} title=${title}`)
+      }
       return json({ html, status, loginStatus, ...(loginRejected ? { error: LOGIN_REJECTED } : {}) })
     } catch (err: any) {
       return json({ error: err?.message ?? 'Unknown error' }, 500)
