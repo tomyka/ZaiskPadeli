@@ -9,6 +9,7 @@ import { scrapeA1Padel } from './scraper-a1padel'
 import { scrapeSimonas } from './scraper-simonas'
 import { scrapeKPadel } from './scraper-kpadel'
 import { scrapePrienuose } from './scraper-prienuose'
+import { scrapePadel4u } from './scraper-padel4u'
 import { wineroScraper } from './scraper-winero'
 
 /**
@@ -24,6 +25,7 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   padelhouse: scrapePadelHouse,
   tennisspace: scrapeTennisSpace,
   kaunopadelis: scrapeKaunoPadelis,
+  padel4u: scrapePadel4u,
   vilniuspadel: scrapeVilniusPadel,
   a1padel: scrapeA1Padel,
   simonas: scrapeSimonas,

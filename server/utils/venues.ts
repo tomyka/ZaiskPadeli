@@ -65,6 +65,15 @@ export const VENUES = [
     indoor: true,
     color: '#eab308',
   },
+  {
+    id: 'padel4u',
+    name: 'Padel4U',
+    address: 'Lakūnų pl., Kaunas',
+    city: 'Kaunas',
+    bookingUrl: 'https://padel4u.cloud/',
+    // indoor/outdoor not stated by the club — left unknown (shown under both filters)
+    color: '#d946ef',
+  },
   // ── Vilnius ─────────────────────────────────────────────────────────────────
   {
     id: 'vilniuspadel',

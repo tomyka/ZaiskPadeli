@@ -106,6 +106,10 @@ Winero's public API (`winero.lt/api/`) returns **booked** slots, not available o
 
 Uses `app.moove.lt/api/v1/settings/tickets/user?locationIds=227&sport=padel&...`. Returns all time-slot "tickets"; status `"free"` = available. Price is in euro cents (÷100 for euros). Indoor/outdoor is detected by `"laukas"` in court name (Lithuanian for "outdoor field").
 
+### Padel4U (padel4u.cloud, custom WordPress plugin)
+
+The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. Availability: `POST /wp-admin/admin-ajax.php` with `action=padel_get_available_slots&nonce&court_id&date` → one entry per 30-min slot with its own price and `available`. The club is open until 02:30 and lists after-midnight slots under the same date; the scraper drops them (our grid is one calendar day). Dates past the ~30-day booking window return `success:false` ("Rezervuoti galima tik iki …") and return no courts, so the venue shows "Nėra duomenų šiai dienai" rather than a fetch failure.
+
 ### UI filter state (index.vue)
 
 Refs: `selectedCity`, `selectedDate`, `filterStart`, `filterEnd`, `filterType`, `filterIndoor`, `activeVenue`. The computed `filteredCourts(venue)` applies all active filters. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
