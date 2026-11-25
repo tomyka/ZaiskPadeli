@@ -179,6 +179,16 @@ export const VENUES = [
     indoor: true, // "14 padelio uždarų kortų"
     color: '#be123c',
   },
+  // ── Telšių apskritis ────────────────────────────────────────────────────────
+  {
+    id: 'minija',
+    name: 'Minija Resort',
+    address: 'Lekemės k., Plungės r.',
+    municipality: 'Plungės r.',
+    bookingUrl: 'https://www.winero.lt/arena/minija-resort',
+    indoor: false, // one lit outdoor court
+    color: '#0f766e',
+  },
 ] as const satisfies readonly VenueInfo[]
 
 export type VenueId = (typeof VENUES)[number]['id']
