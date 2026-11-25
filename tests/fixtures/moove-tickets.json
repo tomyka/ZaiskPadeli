@@ -1,0 +1,116 @@
+{
+  "content": [
+    {
+      "id": 526200663,
+      "court": {
+        "id": 751,
+        "name": "K1 PADELCRUSH",
+        "uiSort": "1"
+      },
+      "ticketTime": "17:00:00",
+      "price": 1500,
+      "status": "free"
+    },
+    {
+      "id": 526200664,
+      "court": {
+        "id": 751,
+        "name": "K1 PADELCRUSH",
+        "uiSort": "1"
+      },
+      "ticketTime": "17:30:00",
+      "price": 1500,
+      "status": "free"
+    },
+    {
+      "id": 522423972,
+      "court": {
+        "id": 752,
+        "name": "K2 BAKIN",
+        "uiSort": "2"
+      },
+      "ticketTime": "17:00:00",
+      "price": 1500,
+      "status": "free"
+    },
+    {
+      "id": 522423973,
+      "court": {
+        "id": 752,
+        "name": "K2 BAKIN",
+        "uiSort": "2"
+      },
+      "ticketTime": "17:30:00",
+      "price": 1500,
+      "status": "free"
+    },
+    {
+      "id": 522456557,
+      "court": {
+        "id": 753,
+        "name": "K3 BROLIŲ MEDUS",
+        "uiSort": "3"
+      },
+      "ticketTime": "17:00:00",
+      "price": 1500,
+      "status": "free"
+    },
+    {
+      "id": 522456558,
+      "court": {
+        "id": 753,
+        "name": "K3 BROLIŲ MEDUS",
+        "uiSort": "3"
+      },
+      "ticketTime": "17:30:00",
+      "price": 1500,
+      "status": "free"
+    },
+    {
+      "id": 524113165,
+      "court": {
+        "id": 754,
+        "name": "K4 OMG FIBRE SODA",
+        "uiSort": "4"
+      },
+      "ticketTime": "17:00:00",
+      "price": 1500,
+      "status": "ordered"
+    },
+    {
+      "id": 524113166,
+      "court": {
+        "id": 754,
+        "name": "K4 OMG FIBRE SODA",
+        "uiSort": "4"
+      },
+      "ticketTime": "17:30:00",
+      "price": 1500,
+      "status": "ordered"
+    },
+    {
+      "id": 522523445,
+      "court": {
+        "id": 831,
+        "name": "Kamuoliukų mašina",
+        "uiSort": "5"
+      },
+      "ticketTime": "17:00:00",
+      "price": 500,
+      "status": "free"
+    },
+    {
+      "id": 522523446,
+      "court": {
+        "id": 831,
+        "name": "Kamuoliukų mašina",
+        "uiSort": "5"
+      },
+      "ticketTime": "17:30:00",
+      "price": 500,
+      "status": "free"
+    }
+  ],
+  "totalElements": 0,
+  "totalPages": 1
+}

@@ -28,6 +28,8 @@ export const MUNICIPALITY_COUNTY = {
   'Kaunas': 'Kauno',
   'Prienų r.': 'Kauno',
   'Klaipėda': 'Klaipėdos',
+  'Klaipėdos r.': 'Klaipėdos',
+  'Palanga': 'Klaipėdos',
   'Šiauliai': 'Šiaulių',
   'Plungės r.': 'Telšių',
   'Alytus': 'Alytaus',

@@ -8,12 +8,13 @@ import { scrapeKaunoPadelis } from './scraper-kaunopadelis'
 import { scrapeVilniusPadel } from './scraper-vilniuspadel'
 import { scrapeA1Padel } from './scraper-a1padel'
 import { scrapeSimonas } from './scraper-simonas'
-import { scrapeKPadel } from './scraper-kpadel'
 import { scrapePrienuose } from './scraper-prienuose'
 import { scrapePadel4u } from './scraper-padel4u'
 import { wineroScraper } from './scraper-winero'
 import { scrapeGoPadel } from './scraper-gopadel'
 import { scrapePadelin } from './scraper-padelin'
+import { mooveScraper } from './scraper-moove'
+import { ntennisScraper } from './scraper-ntennis'
 
 /**
  * A scraper fetches one venue's courts for a date.
@@ -32,7 +33,7 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   vilniuspadel: scrapeVilniusPadel,
   a1padel: scrapeA1Padel,
   simonas: scrapeSimonas,
-  kpadel: scrapeKPadel,
+  kpadel: mooveScraper({ locationId: 227 }),
   prienuose: scrapePrienuose,
   zirmunai: wineroScraper({ arenaId: 'a77b94b4-46c0-4e7b-b69d-2ed700d3e483' }),
   padelfactory: wineroScraper({ arenaId: '6526ba41-0328-4562-9da0-c8708f2e42ec', skipCourts: ['kamuoliukų mašina', 'ball machine'] }),
@@ -40,6 +41,11 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   minija: wineroScraper({ arenaId: 'fdaf2d26-fee7-482d-a555-75140ba59999' }),
   gopadel: scrapeGoPadel,
   padelin: scrapePadelin,
+  bsportklaipeda: ntennisScraper({ baseUrl: 'https://savitarna.bsport.lt', placeId: 2 }),
+  skycop: ntennisScraper({ baseUrl: 'https://savitarna.padelionamai.lt', placeId: 4 }),
+  padelionamai: ntennisScraper({ baseUrl: 'https://savitarna.padelionamai.lt', placeId: 2 }),
+  drevernos: mooveScraper({ locationId: 288, indoor: true }),
+  startpadel: mooveScraper({ locationId: 158, indoor: true }),
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.

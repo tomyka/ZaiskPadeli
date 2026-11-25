@@ -28,3 +28,8 @@ export function expandHourHeader(text: string): string[] {
   const start = toMinutes(t)
   return [fromMinutes(start), fromMinutes(start + 30)]
 }
+
+/** "Vienetų kortas", "5 Single SUN365", "1v1": clubs name singles courts in several ways */
+export function isSinglesCourtName(name: string): boolean {
+  return /vienet|single|\b1\s*v\s*1\b/i.test(name)
+}

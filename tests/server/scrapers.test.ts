@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { parseNTennisGrid } from '../../server/utils/ntennis'
+import { isSinglesCourtName } from '../../server/utils/parse'
 import { padelHubSlotTime, parsePadelHubCourts } from '../../server/utils/scraper-padelhub'
 import { parsePadelHouseHtml } from '../../server/utils/scraper-padelhouse'
 import { getPriceForSlot, parseOpeningHours, type WineroCourt } from '../../server/utils/scraper-winero'
@@ -26,6 +27,11 @@ describe('parseNTennisGrid', () => {
     const singles = parseNTennisGrid(html, { idPrefix: 'ts', currentMinutes: -1 })[1]!
     expect(singles.type).toBe('singles')
     expect(singles.slots[1]).toEqual({ time: '07:30', available: true, price: null })
+  })
+
+  it('recognises singles courts by Lithuanian or English names', () => {
+    expect(['Vienetų kortas', '5 Single SUN365', 'Kortas 1v1'].map(isSinglesCourtName)).toEqual([true, true, true])
+    expect(['1 Biofarmacija', 'Padelis 3', 'Singapūras'].map(isSinglesCourtName)).toEqual([false, false, false])
   })
 
   it('skips rows without a court name', () => {

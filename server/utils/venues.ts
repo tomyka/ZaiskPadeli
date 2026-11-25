@@ -88,8 +88,8 @@ export const VENUES = [
   {
     id: 'a1padel',
     name: 'A1Padel Klaipėda',
-    address: 'Smilgų g. 5, Klaipėda',
-    municipality: 'Klaipėda',
+    address: 'Smilgų g. 5, Dirvupių k., Klaipėdos r.',
+    municipality: 'Klaipėdos r.',
     bookingUrl: 'https://savitarna.a1padel.lt/reservation/short',
     indoor: true,
     color: '#06b6d4',
@@ -184,6 +184,52 @@ export const VENUES = [
     bookingUrl: 'https://padelin.lt/pages/reservation',
     // indoor/outdoor not stated by the club: left unknown (shown under both filters)
     color: '#0ea5e9',
+  },
+  // ── Klaipėdos apskritis (added in #33) ──────────────────────────────────────
+  {
+    id: 'bsportklaipeda',
+    name: 'Bsport arena',
+    address: 'Tilžės g. 90, Klaipėda',
+    municipality: 'Klaipėda',
+    bookingUrl: 'https://savitarna.bsport.lt/',
+    indoor: true,
+    color: '#ef4444',
+  },
+  {
+    id: 'skycop',
+    name: 'Skycop padelio arena',
+    address: 'Bangų g. 2, Klaipėda',
+    municipality: 'Klaipėda',
+    bookingUrl: 'https://savitarna.padelionamai.lt/',
+    // 5 courts, 4 of them covered; the grid doesn't say which: left unknown
+    color: '#84cc16',
+  },
+  {
+    id: 'padelionamai',
+    name: 'Padelio namai',
+    address: 'Jungtinė g. 1, Aukštkiemiai, Klaipėdos r.',
+    municipality: 'Klaipėdos r.',
+    bookingUrl: 'https://savitarna.padelionamai.lt/',
+    indoor: true, // "Slėnis viduje"
+    color: '#0284c7',
+  },
+  {
+    id: 'drevernos',
+    name: 'Drevernos uostas',
+    address: 'Pamario g. 12, Drevernos k., Klaipėdos r.',
+    municipality: 'Klaipėdos r.',
+    bookingUrl: 'https://app.moove.lt/padel/club/reservation/136?locationId=288',
+    indoor: true, // the indoor courts; the outdoor ones are seasonal (#42)
+    color: '#c2410c',
+  },
+  {
+    id: 'startpadel',
+    name: 'Start Padel Palanga',
+    address: 'Vėjų g. 6, Palanga',
+    municipality: 'Palanga',
+    bookingUrl: 'https://app.moove.lt/padel/reservation',
+    indoor: true,
+    color: '#7c3aed',
   },
 ] as const satisfies readonly VenueInfo[]
 

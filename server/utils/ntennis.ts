@@ -1,6 +1,6 @@
 import { load } from 'cheerio'
 import type { Court, TimeSlot } from './types'
-import { expandHourHeader, parseBgColor, parseEuro } from './parse'
+import { expandHourHeader, isSinglesCourtName, parseBgColor, parseEuro } from './parse'
 import { isSlotOver } from './time'
 
 /**
@@ -78,7 +78,7 @@ export function parseNTennisGrid(html: string, opts: NTennisGridOptions): Court[
     courts.push({
       id: `${opts.idPrefix}-${courtName.replace(/\s+/g, '-').toLowerCase()}`,
       name: courtName,
-      type: courtName.toLowerCase().includes('vienet') ? 'singles' : 'doubles',
+      type: isSinglesCourtName(courtName) ? 'singles' : 'doubles',
       slots,
     })
   })
