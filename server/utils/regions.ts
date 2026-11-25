@@ -31,6 +31,7 @@ export const MUNICIPALITY_COUNTY = {
   'Šiauliai': 'Šiaulių',
   'Plungės r.': 'Telšių',
   'Alytus': 'Alytaus',
+  'Marijampolė': 'Marijampolės',
   'Panevėžys': 'Panevėžio',
   'Panevėžio r.': 'Panevėžio',
 } as const satisfies Record<string, County>

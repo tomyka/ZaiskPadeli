@@ -13,6 +13,7 @@ import { scrapePrienuose } from './scraper-prienuose'
 import { scrapePadel4u } from './scraper-padel4u'
 import { wineroScraper } from './scraper-winero'
 import { scrapeGoPadel } from './scraper-gopadel'
+import { scrapePadelin } from './scraper-padelin'
 
 /**
  * A scraper fetches one venue's courts for a date.
@@ -38,6 +39,7 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   vilmers: wineroScraper({ arenaId: 'c389edb7-7e41-4e2e-bcb2-a6157cdcfc97' }),
   minija: wineroScraper({ arenaId: 'fdaf2d26-fee7-482d-a555-75140ba59999' }),
   gopadel: scrapeGoPadel,
+  padelin: scrapePadelin,
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.

@@ -175,6 +175,16 @@ export const VENUES = [
     indoor: true, // 9 heated indoor courts
     color: '#a855f7',
   },
+  // ── Marijampolės apskritis ──────────────────────────────────────────────────
+  {
+    id: 'padelin',
+    name: 'Padel in',
+    address: 'Prienų g. 19, Patašinės k., Marijampolės sav.',
+    municipality: 'Marijampolė',
+    bookingUrl: 'https://padelin.lt/pages/reservation',
+    // indoor/outdoor not stated by the club: left unknown (shown under both filters)
+    color: '#0ea5e9',
+  },
 ] as const satisfies readonly VenueInfo[]
 
 export type VenueId = (typeof VENUES)[number]['id']
