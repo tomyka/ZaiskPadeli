@@ -4,12 +4,13 @@
     <button ref="trigger" type="button" aria-haspopup="listbox" :aria-expanded="open" :aria-controls="open ? listId : undefined"
       :aria-label="`${label}: ${selected?.label ?? ''}`"
       :class="['flex h-11 w-full min-w-0 items-center gap-1.5 rounded-full border pl-3 pr-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ball-deep focus-visible:ring-offset-2',
-        active ? 'border-ink bg-ink text-ball' : 'border-court-line bg-white text-ink hover:border-ink/40']"
+        dashed ? 'border-dashed' : '',
+        active ? 'border-ink bg-ink text-ball' : dashed ? 'border-gray-400 bg-white text-gray-700 hover:border-ink/40' : 'border-court-line bg-white text-ink hover:border-ink/40']"
       @click="toggle" @keydown="onTriggerKey">
       <span :class="['shrink-0', active ? 'text-ball' : 'text-gray-600']"><slot name="icon" /></span>
       <span class="min-w-0 flex-1 truncate text-left font-medium">{{ selected?.label }}</span>
       <span v-if="selected?.hint" :class="['shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium', hintClass(active)]">{{ selected.hint }}</span>
-      <svg :class="['h-3.5 w-3.5 shrink-0 transition-transform', open ? 'rotate-180' : '', active ? 'text-ball' : 'text-gray-600']"
+      <svg :class="['h-3.5 w-3.5 shrink-0 transition-transform', open ? 'rotate-180' : '', compact ? 'hidden lg:block' : '', active ? 'text-ball' : 'text-gray-600']"
         fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
       </svg>
@@ -59,7 +60,11 @@ const props = withDefaults(defineProps<{
   options: readonly { value: T; label: string; hint?: string }[]
   /** Style the trigger as a selected filter (ink), like the other active pills */
   active?: boolean
-}>(), { active: false })
+  /** Dashed outline: an optional refinement rather than a main filter (the start-time picker) */
+  dashed?: boolean
+  /** Below desktop width, drop the chevron so the pill fits beside other pills in a tight row */
+  compact?: boolean
+}>(), { active: false, dashed: false, compact: false })
 const model = defineModel<T>({ required: true })
 
 const open = ref(false)

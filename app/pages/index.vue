@@ -51,17 +51,14 @@
               : 'border-court-line bg-white text-ink hover:border-ink/40']">
           {{ d }} min
         </button>
-        <label class="relative ml-auto flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-dashed px-3 text-sm focus-within:ring-[3px] focus-within:ring-ball-deep focus-within:ring-offset-2 lg:ml-0 lg:w-full"
-          :class="fromTime ? 'border-ink bg-ink text-ball' : 'border-gray-400 bg-white text-gray-700'">
-          <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-          </svg>
-          <span class="sr-only">Pradžios laikas</span>
-          <select v-model="fromTime" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-1 font-medium focus:outline-none">
-            <option value="">Bet kada</option>
-            <option v-for="t in view.startTimeOptions" :key="t" :value="t">nuo {{ t }}</option>
-          </select>
-        </label>
+        <SelectMenu v-model="fromTime" label="Pradžios laikas" :options="startTimeChoices" :active="!!fromTime" dashed compact
+          class="ml-auto min-w-0 lg:ml-0 lg:w-full">
+          <template #icon>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+          </template>
+        </SelectMenu>
       </div>
 
       <!-- County (+ more filters on phones), then its municipalities when it has several -->
@@ -310,6 +307,12 @@ const county = computed({
   set: (c) => { location.value = chooseCounty(location.value, c) },
 })
 const choices = computed(() => locationChoices(location.value))
+
+/** "Bet kada" plus every start time the view offers */
+const startTimeChoices = computed(() => [
+  { value: '', label: 'Bet kada' },
+  ...view.value.startTimeOptions.map(t => ({ value: t, label: `nuo ${t}` })),
+])
 
 const { data, pending, error, refresh: rawRefresh } = useFetch<AvailabilityResponse>('/api/availability', {
   query: { date: selectedDate },

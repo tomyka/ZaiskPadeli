@@ -121,7 +121,7 @@ The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. A
 
 Every control must look like the rest of the app. Use the palette tokens in `tailwind.config.ts` (`ink`, `ball`, `court`) rather than raw colours (the one accepted exception is `text-gray-600` for secondary text, which has no token), and reuse the existing components before writing new markup:
 
-- `SelectMenu` — single-choice dropdown (pill trigger, rounded panel, keyboard + screen-reader support). Use it instead of a native `<select>`, whose open list the OS draws in its own style.
+- `SelectMenu` — single-choice dropdown (pill trigger, rounded panel, keyboard + screen-reader support). Use it instead of a native `<select>`, whose open list the OS draws in its own style. Both pickers use it: county (`active` when narrowed) and start time (`dashed` = optional refinement, `compact` = no chevron on phones so it fits beside the duration pills).
 - `SegmentedControl` — a few mutually exclusive options in a row.
 - `BottomSheet` — phone sheets / dialogs.
 - Chips and pills: `h-11 rounded-full border px-3.5 text-sm`; selected/active filter = `border-ink bg-ink text-ball`, otherwise `border-court-line bg-white text-ink hover:border-ink/40`. Tap targets are at least 44px.
