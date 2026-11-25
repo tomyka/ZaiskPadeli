@@ -37,6 +37,7 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   bajada: wineroScraper({ arenaId: '887c031b-06a6-4799-8355-fb2685f2b508' }),
   aukstaitijos: wineroScraper({ arenaId: 'a582ca8a-ef5a-45ba-b50e-915d1b2b71bd' }),
   harmonypark: wineroScraper({ arenaId: '41bb5931-4468-46e7-96ad-2c958240da9c' }),
+  vilmers: wineroScraper({ arenaId: 'c389edb7-7e41-4e2e-bcb2-a6157cdcfc97' }),
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.

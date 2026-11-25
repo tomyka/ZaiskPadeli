@@ -169,6 +169,16 @@ export const VENUES = [
     indoor: false,
     color: '#84cc16',
   },
+  // ── Šiauliai ────────────────────────────────────────────────────────────────
+  {
+    id: 'vilmers',
+    name: 'Vilmers padel namai',
+    address: 'Latvių g. 60A, Šiauliai',
+    municipality: 'Šiauliai',
+    bookingUrl: 'https://www.winero.lt/arena/vilmers-padel-namai',
+    indoor: true, // "14 padelio uždarų kortų"
+    color: '#be123c',
+  },
 ] as const satisfies readonly VenueInfo[]
 
 export type VenueId = (typeof VENUES)[number]['id']

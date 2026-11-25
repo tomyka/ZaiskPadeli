@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Court } from '../../server/utils/types'
-import { MUNICIPALITIES } from '../../server/utils/regions'
+import { MUNICIPALITIES, countyOf } from '../../server/utils/regions'
 import { ACTIVE_COUNTIES, ACTIVE_MUNICIPALITIES, VENUES, venueInfo, type VenueInfo } from '../../server/utils/venues'
 import { runScraper, SCRAPERS } from '../../server/utils/scraper-all'
 
@@ -24,7 +24,8 @@ describe('venue registry', () => {
 
   it('derives active counties and municipalities from venues', () => {
     expect(ACTIVE_COUNTIES.has('Kauno')).toBe(true)
-    expect(ACTIVE_COUNTIES.has('Šiaulių')).toBe(false)
+    expect(ACTIVE_COUNTIES.has('Šiaulių')).toBe(true)
+    expect(ACTIVE_COUNTIES.size).toBe(new Set(VENUES.map(v => countyOf(v.municipality))).size)
     expect(ACTIVE_MUNICIPALITIES.has('Prienų r.')).toBe(true)
   })
 

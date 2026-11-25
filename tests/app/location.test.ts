@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   COUNTY_OPTIONS, EVERYWHERE, chooseCounty, chooseMunicipality, isIn, locateAt, locationChoices, toLocation,
 } from '../../app/utils/location'
+import { COUNTIES } from '../../server/utils/regions'
+import { ACTIVE_COUNTIES } from '../../server/utils/venues'
+
+/** A county still without venues, if any (venues are being added county by county, #30) */
+const EMPTY_COUNTY = COUNTIES.find(c => !ACTIVE_COUNTIES.has(c))
 
 const PRIENAI = { lat: 54.63, lng: 23.95 }
 const VILNIUS = { lat: 54.69, lng: 25.28 }
@@ -53,7 +58,9 @@ describe('locationChoices', () => {
   })
 
   it('says when a county has no venues yet', () => {
-    expect(locationChoices(toLocation('Šiaulių', null)).noVenuesText).toBe('Šiaulių apskrities kortų duomenų kol kas neturime.')
+    if (EMPTY_COUNTY) {
+      expect(locationChoices(toLocation(EMPTY_COUNTY, null)).noVenuesText).toBe(`${EMPTY_COUNTY} apskrities kortų duomenų kol kas neturime.`)
+    }
     expect(locationChoices(toLocation('Kauno', null)).noVenuesText).toBeNull()
     expect(locationChoices(EVERYWHERE).noVenuesText).toBeNull()
   })

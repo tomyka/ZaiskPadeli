@@ -109,6 +109,12 @@ describe('Winero helpers', () => {
     expect(parseOpeningHours(hours, '2026-11-25')).toBeNull() // Wed missing
   })
 
+  it('reads hours whose lines end in a backslash before the newline (Vilmers)', () => {
+    const raw = 'Monday 06:00 – 23:00\\\nTuesday 06:00 – 23:00\\\nSunday 07:00 – 22:00'
+    expect(parseOpeningHours(raw, '2026-11-23')).toEqual({ open: '06:00', close: '23:00' })
+    expect(parseOpeningHours(raw, '2026-11-29')).toEqual({ open: '07:00', close: '22:00' })
+  })
+
   const court: WineroCourt = {
     id: 'c1',
     name: 'Kortas 1',
