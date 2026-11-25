@@ -1,7 +1,8 @@
 /**
  * Reactive `matchMedia`. False during SSR and until mounted, so the server
  * and first client render agree; layout differences should come from CSS,
- * this is only for behaviour (e.g. panel vs bottom sheet).
+ * this is only for behaviour (e.g. panel vs bottom sheet). Keep queries in
+ * step with Tailwind's breakpoints (lg = 1024px) so JS and CSS agree.
  */
 export function useMediaQuery(query: string) {
   const matches = ref(false)

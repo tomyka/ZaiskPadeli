@@ -1,10 +1,13 @@
 <template>
   <div>
-    <p class="text-[13px] text-gray-600">{{ sheet.venue.name }} · {{ dayLabel }}</p>
-    <h2 class="text-[26px] font-bold tabular-nums text-gray-900">{{ sheet.start.time }} – {{ sessionEnd(sheet.start.time, duration) }}</h2>
-    <p class="text-sm text-gray-600">
-      {{ duration }} min · {{ sheet.start.courts.length }} {{ ltPlural(sheet.start.courts.length, 'laisvas kortas', 'laisvi kortai', 'laisvų kortų') }}
-    </p>
+    <!-- Right padding keeps the heading clear of the container's close button -->
+    <div class="pr-12">
+      <p class="text-[13px] text-gray-600">{{ sheet.venue.name }} · {{ dayLabel }}</p>
+      <h2 class="text-[26px] font-bold tabular-nums text-gray-900">{{ sheet.start.time }} – {{ sessionEnd(sheet.start.time, duration) }}</h2>
+      <p class="text-sm text-gray-600">
+        {{ duration }} min · {{ sheet.start.courts.length }} {{ ltPlural(sheet.start.courts.length, 'laisvas kortas', 'laisvi kortai', 'laisvų kortų') }}
+      </p>
+    </div>
 
     <ul class="mt-4 space-y-2.5">
       <li v-for="c in sheet.start.courts" :key="c.court.id"

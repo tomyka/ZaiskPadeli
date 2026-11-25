@@ -38,9 +38,16 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
 }
 
+let locked = false
+function setLocked(on: boolean) {
+  if (on === locked) return
+  locked = on
+  lockBodyScroll(on)
+}
+
 watch(() => props.open, async (open) => {
   if (!import.meta.client) return
-  document.body.style.overflow = open ? 'hidden' : ''
+  setLocked(open)
   if (open) {
     window.addEventListener('keydown', onKey)
     await nextTick()
@@ -52,7 +59,16 @@ watch(() => props.open, async (open) => {
 
 onBeforeUnmount(() => {
   if (!import.meta.client) return
-  document.body.style.overflow = ''
+  setLocked(false)
   window.removeEventListener('keydown', onKey)
 })
+</script>
+
+<script lang="ts">
+/** Shared by every sheet, so closing one doesn't unlock the page while another is still open */
+let openSheets = 0
+function lockBodyScroll(on: boolean) {
+  openSheets = Math.max(0, openSheets + (on ? 1 : -1))
+  document.body.style.overflow = openSheets > 0 ? 'hidden' : ''
+}
 </script>

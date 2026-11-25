@@ -199,10 +199,10 @@
     </div>
 
     <!-- ═══ SESSION PANEL (desktop) ═══ -->
-    <aside v-if="panelSheet" aria-label="Pasirinktas laikas"
-      class="sticky top-20 max-h-[calc(100vh-6rem)] w-[22rem] shrink-0 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-lg">
+    <aside v-if="panelSheet" ref="panelEl" tabindex="-1" aria-label="Pasirinktas laikas"
+      class="sticky top-20 max-h-[calc(100vh-6rem)] w-[22rem] shrink-0 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-lg outline-none">
       <button type="button" aria-label="Uždaryti" @click="sheetKey = null"
-        class="float-right -mr-2 -mt-2 flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+        class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>
@@ -343,10 +343,35 @@ function openSession(venueId: string, time: string) {
 }
 
 /** Resolved from live data, so it closes itself if a refresh removes the session */
-const sheet = computed(() => sheetKey.value && resolveSession(view.value, sheetKey.value.venueId, sheetKey.value.time))
+const sheet = computed<SessionSheet | null>(() =>
+  sheetKey.value ? resolveSession(view.value, sheetKey.value.venueId, sheetKey.value.time) : null
+)
 
 /** Shown in the side panel; also drives the card highlight and the narrower grid */
-const panelSheet = computed(() => (isDesktop.value ? sheet.value : null) || null)
+const panelSheet = computed(() => (isDesktop.value ? sheet.value : null))
+
+// The filter sheet is phone-only: don't let it reappear after the window narrows again
+watch(isDesktop, (desktop) => { if (desktop) filtersOpen.value = false })
+
+// Desktop panel keyboard behaviour, matching the bottom sheet: focus moves in, Escape closes,
+// focus returns to the time button that opened it
+const panelEl = ref<HTMLElement | null>(null)
+let panelOpener: HTMLElement | null = null
+watch(() => !!panelSheet.value, async (open) => {
+  if (open) {
+    panelOpener = document.activeElement as HTMLElement | null
+    await nextTick()
+    panelEl.value?.focus()
+  } else {
+    panelOpener?.focus()
+    panelOpener = null
+  }
+})
+function onPanelKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && panelSheet.value) sheetKey.value = null
+}
+onMounted(() => window.addEventListener('keydown', onPanelKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onPanelKey))
 
 /** Last open sheet, kept after closing so the content doesn't blank out during the leave transition */
 const shownSheet = shallowRef<SessionSheet | null>(null)

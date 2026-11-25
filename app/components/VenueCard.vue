@@ -38,7 +38,7 @@
       <!-- Collapsed: next few start times -->
       <div v-if="!expanded" class="flex gap-1.5 px-4 pb-3 pt-2.5">
         <button v-for="s in sessions.starts.slice(0, PREVIEW)" :key="s.time" type="button"
-          :aria-pressed="s.time === selectedTime"
+          :aria-current="s.time === selectedTime ? 'true' : undefined"
           :class="['h-11 min-w-0 flex-1 rounded-xl border text-sm font-semibold tabular-nums transition active:scale-[0.97] lg:max-w-[5rem]',
             s.time === selectedTime ? SELECTED : IDLE]"
           @click="emit('pick', s.time)">
@@ -59,9 +59,9 @@
             <span class="text-sm font-semibold text-gray-800">{{ court.name }}</span>
             <CourtTags :court="court" />
           </div>
-          <div class="grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-1.5">
+          <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-[repeat(auto-fill,4.5rem)]">
             <button v-for="s in starts" :key="s.time" type="button"
-              :aria-pressed="s.time === selectedTime"
+              :aria-current="s.time === selectedTime ? 'true' : undefined"
               :class="['flex min-h-[3rem] flex-col items-center justify-center rounded-xl border transition active:scale-[0.97]',
                 s.time === selectedTime ? SELECTED : IDLE]"
               @click="emit('pick', s.time)">

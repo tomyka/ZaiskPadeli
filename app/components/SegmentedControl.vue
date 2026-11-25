@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts" generic="T">
-/** A row of mutually exclusive choices (court type, indoor/outdoor, duration) */
+/** A row of mutually exclusive choices (court type, indoor/outdoor) */
 defineProps<{ legend: string; options: { value: T; label: string }[] }>()
 const model = defineModel<T>({ required: true })
 </script>
