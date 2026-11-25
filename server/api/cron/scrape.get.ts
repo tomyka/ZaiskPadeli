@@ -1,15 +1,18 @@
-import { setCached } from '../../utils/cache'
-import { scrapeAllVenues } from '../../utils/scraper-all'
+import { getCached } from '../../utils/cache'
+import { refreshAvailability } from '../../utils/refresh'
 import { nextDatesLT } from '../../utils/time'
-import type { AvailabilityResponse } from '../../utils/types'
+import type { ScrapeReport } from '../../utils/types'
 
 /**
- * Cron endpoint: pre-scrapes today + tomorrow and stores in Vercel KV.
- * Called every 30 minutes by the GitHub Actions workflow (.github/workflows/scrape-cron.yml).
+ * Cron endpoint: pre-scrapes today + the next 2 days and stores them in KV.
+ * Called every 5 minutes by the cf-proxy Worker's cron trigger (cf-proxy/src/worker.ts);
+ * the GitHub Actions workflow (.github/workflows/scrape-cron.yml) is a manual fallback.
  * Protected by CRON_SECRET to prevent external abuse.
+ *
+ * Response per date: `failed` = venues showing an error, `carried` = venues whose scrape
+ * failed but still show their last good data (see carryOverFailedVenues).
  */
 export default defineEventHandler(async (event) => {
-  // Verify cron secret (Vercel sends this header automatically for cron jobs)
   const authHeader = getHeader(event, 'authorization')
   const cronSecret = process.env.CRON_SECRET
 
@@ -21,30 +24,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 
-  // Pre-warm today + next 2 days in Lithuanian timezone (most commonly viewed)
   const dates = nextDatesLT(3)
-
-  const results: Record<string, { venues: number; errors: number; failed: string[]; ms: number }> = {}
+  const results: Record<string, ScrapeReport> = {}
 
   for (const date of dates) {
     const start = Date.now()
-    try {
-      const venues = await scrapeAllVenues(date)
-
-      const failed = venues.filter(v => v.error).map(v => v.id)
-      const result: AvailabilityResponse = {
-        date,
-        venues,
-        fetchedAt: new Date().toISOString(),
-        fromCache: false,
-        cacheAgeSeconds: 0,
-      }
-      await setCached(date, result)
-      results[date] = { venues: venues.length, errors: failed.length, failed, ms: Date.now() - start }
-    } catch (e) {
-      results[date] = { venues: 0, errors: -1, failed: [], ms: Date.now() - start }
-      console.error(`[cron] Failed to scrape ${date}:`, (e as Error).message)
-    }
+    const previous = await getCached(date)
+    const { data, carried } = await refreshAvailability(date, previous?.data)
+    const failed = data.venues.filter(v => v.error).map(v => v.id)
+    results[date] = { venues: data.venues.length, errors: failed.length, failed, carried, ms: Date.now() - start }
   }
 
   return {

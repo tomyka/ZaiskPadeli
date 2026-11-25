@@ -1,14 +1,15 @@
-name: Pre-warm scrape cache
+name: Pre-warm scrape cache (manual)
 
+# The schedule lives in the cf-proxy Worker's cron trigger (cf-proxy/wrangler.toml):
+# GitHub's schedule stopped firing after 2026-10-29 and delayed runs by hours (#22).
+# This workflow stays as a manual way to trigger a scrape and read the health report.
 on:
-  schedule:
-    - cron: '*/30 * * * *'  # every 30 minutes — throttled from 5 min to stay within the Actions minutes quota (see 8e5a88d)
-  workflow_dispatch:         # allow manual trigger
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Trigger scrape
         run: |
@@ -20,16 +21,9 @@ jobs:
             echo "::error::Scrape returned HTTP $status"
             exit 1
           fi
-          # Scraper-health canary: surface venues whose upstream site broke
-          # (a warning annotation on the run, not a failure, so one flaky venue doesn't page anyone)
-          jq -r '.results | to_entries[] | "\(.key) venues=\(.value.venues) errors=\(.value.errors) ms=\(.value.ms) failed=\(.value.failed // [] | join(","))"' body.json
-          failed=$(jq -r '[.results[].failed // [] | .[]] | unique | join(", ")' body.json)
+          # Scraper-health canary: venues whose upstream site broke (carried = still showing last good data)
+          jq -r '.results | to_entries[] | "\(.key) venues=\(.value.venues) errors=\(.value.errors) ms=\(.value.ms) failed=\(.value.failed | join(",")) carried=\(.value.carried | join(","))"' body.json
+          failed=$(jq -r '[.results[].failed[]] | unique | join(", ")' body.json)
           if [ -n "$failed" ]; then
             echo "::warning title=Venues failing to scrape::$failed"
-          fi
-          # errors == -1 means the whole date failed to scrape — that's an outage, fail the run
-          dead=$(jq -r '[.results | to_entries[] | select(.value.errors == -1) | .key] | join(", ")' body.json)
-          if [ -n "$dead" ]; then
-            echo "::error title=Scrape failed for whole dates::$dead"
-            exit 1
           fi

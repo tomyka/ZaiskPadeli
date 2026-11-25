@@ -34,6 +34,19 @@ export interface Venue {
   courts: Court[]
   lastUpdated: string // ISO timestamp
   error?: string
+  /** This scrape failed; courts are the last good data from `lastUpdated` (see carryOverFailedVenues) */
+  carriedOver?: true
+}
+
+/** Per-date health report from /api/cron/scrape, read by the cf-proxy Worker's cron */
+export interface ScrapeReport {
+  venues: number
+  /** Venues showing an error (failed or empty day) */
+  errors: number
+  failed: string[]
+  /** Scrape failed but last good data is still shown */
+  carried: string[]
+  ms: number
 }
 
 export interface AvailabilityResponse {

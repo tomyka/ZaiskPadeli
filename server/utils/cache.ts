@@ -4,16 +4,13 @@ import type { AvailabilityResponse } from './types'
 // Bump the version when cached data's shape or guarantees change (v2: slots in venue-day order)
 const KV_PREFIX = 'avail:v2'
 const FRESH_TTL_SEC = 5 * 60         // 5 min — considered "fresh"
-const STALE_TTL_SEC = 60 * 60        // 60 min — stale but servable as fallback
+export const STALE_TTL_SEC = 60 * 60 // 60 min — stale but servable as fallback
 const KV_STORE_TTL_SEC = STALE_TTL_SEC + 60 // stored slightly longer than stale window
 
 interface KVEntry {
   data: AvailabilityResponse
   storedAt: number // epoch ms
 }
-
-// In-flight dedup stays in-memory (per-instance by nature)
-const inflight = new Map<string, Promise<AvailabilityResponse>>()
 
 function kvKey(date: string): string {
   return `${KV_PREFIX}:${date}`
@@ -84,13 +81,4 @@ export async function setCached(date: string, data: AvailabilityResponse): Promi
       if (oldest) memCache.delete(oldest[0])
     }
   }
-}
-
-export function getInflight(date: string): Promise<AvailabilityResponse> | undefined {
-  return inflight.get(date)
-}
-
-export function setInflight(date: string, promise: Promise<AvailabilityResponse>): void {
-  inflight.set(date, promise)
-  promise.finally(() => inflight.delete(date))
 }

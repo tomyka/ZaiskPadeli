@@ -1,3 +1,10 @@
+/** "14:05" — clock time of an ISO timestamp in Lithuanian time (same on server and client) */
+export function formatClock(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleTimeString('lt-LT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Vilnius' })
+}
+
 /** €42, €40.50 */
 export function formatPrice(p: number): string {
   return `€${Number.isInteger(p) ? p : p.toFixed(2)}`

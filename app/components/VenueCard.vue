@@ -92,7 +92,7 @@
 import type { Court, Venue } from '~~/server/utils/types'
 import { venueInfo } from '~~/server/utils/venues'
 import { SLOT_MIN } from '~~/server/utils/time'
-import { formatPrice, ltPlural } from '~/utils/format'
+import { formatClock, formatPrice, ltPlural } from '~/utils/format'
 import { sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
 import { chipPrice, venuePricesByKind } from '~/utils/availability'
 
@@ -130,6 +130,8 @@ const meta = computed(() => {
   const p = venuePricesByKind(props.sessions.starts)
   if (p.doubles !== null) parts.push(`nuo ${formatPrice(p.doubles)} / ${props.duration} min`)
   if (p.singles !== null) parts.push(`1v1 nuo ${formatPrice(p.singles)}`)
+  // This scrape failed and older data is shown: say how old, since the page header shows the newer fetch time
+  if (props.venue.carriedOver) parts.push(`duomenys ${formatClock(props.venue.lastUpdated)}`)
   // Non-breaking spaces keep each phrase ("1v1 nuo €30") on one line when the info line wraps
   return parts.map(part => part.replace(/ /g, '\u00a0')).join(' · ')
 })

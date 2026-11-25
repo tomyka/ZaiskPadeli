@@ -9,8 +9,16 @@ compatibility_date = "2025-01-01"
 mode = "targeted"
 region = "gcp:europe-central2"
 
+# Pre-warm the app's availability cache (today + 2 days) every 5 minutes, matching
+# the cache's 5-minute freshness window. Replaces the GitHub Actions schedule, which
+# stopped firing reliably (#22).
+[triggers]
+crons = ["*/5 * * * *"]
+
 [vars]
+APP_URL = "https://zaiskpadeli.lt"
 # Secrets — set via `wrangler secret put <NAME>`, never committed here:
 #   PROXY_TOKEN
 #   KAUNOPADELIS_LOGIN
 #   KAUNOPADELIS_PASSWORD
+#   CRON_SECRET  (same value as the app's CRON_SECRET)

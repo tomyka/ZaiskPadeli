@@ -21,7 +21,7 @@ server/
   api/
     availability.get.ts      # GET /api/availability?date=YYYY-MM-DD — main data endpoint
     stats.get.ts             # GET /api/stats
-    cron/scrape.get.ts       # GET /api/cron/scrape — pre-warms cache (called by GitHub Actions every 30 min)
+    cron/scrape.get.ts       # GET /api/cron/scrape — pre-warms cache (called every 5 min by the cf-proxy Worker's cron trigger)
   middleware/
     analytics.ts             # request logging
     rate-limit.ts            # 20 req/IP/min for /api/*
@@ -39,12 +39,12 @@ server/
 
 ### Request flow
 
-`index.vue` fetches `/api/availability?date=YYYY-MM-DD` → Nitro handler checks Vercel KV cache (fresh = <5 min, stale = <60 min) → on miss/stale, `scrapeAllVenues()` runs all scrapers in parallel → result stored in KV → returned to client. A GitHub Actions cron hits `/api/cron/scrape` every 30 minutes to pre-warm the cache for today and the next 2 days.
+`index.vue` fetches `/api/availability?date=YYYY-MM-DD` → Nitro handler checks Vercel KV cache (fresh = <5 min, stale = <60 min) → on miss/stale, `scrapeAllVenues()` runs all scrapers in parallel → result stored in KV → returned to client. The cf-proxy Worker's cron trigger hits `/api/cron/scrape` every 5 minutes to pre-warm the cache for today and the next 2 days. Every refresh goes through `refreshAvailability()` (`server/utils/refresh.ts`): a venue whose scrape fails keeps its last good courts while they are under 60 min old (judged by the venue's own `lastUpdated`).
 
 ### Cache
 
 - **Fresh** (< 5 min): served directly from KV, no re-scrape
-- **Stale** (5–60 min): triggers background re-scrape; if scrape fails, stale data is returned as fallback
+- **Stale** (5–60 min): the request re-scrapes (blocking); venues that fail keep their courts from the stale entry
 - **Local dev**: no KV credentials → in-memory `Map` fallback (auto-detected by `isKVAvailable()`)
 - Env vars required in prod: `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `CRON_SECRET`
 
@@ -120,4 +120,4 @@ Refs: `selectedCity`, `selectedDate`, `filterStart`, `filterEnd`, `filterType`, 
 npx vercel --prod --yes
 ```
 
-The cron job (`CRON_SECRET` env var) is called via GitHub Actions (`.github/workflows/scrape-cron.yml`) every 30 minutes; it annotates the run with venues that failed to scrape — no Vercel Cron configuration needed.
+The cron job (`CRON_SECRET` env var) is called every 5 minutes by the cf-proxy Worker's cron trigger (`cf-proxy/wrangler.toml`, `scheduled` in `cf-proxy/src/worker.ts`; the Worker needs `CRON_SECRET` as a secret too) and logs failed/carried-over venues (`wrangler tail`). Deploying the Worker (`cd cf-proxy && npx wrangler deploy`) installs the schedule; it needs `npx wrangler secret put CRON_SECRET` once, with the same value as the app's `CRON_SECRET` on Vercel, and `APP_URL` in `wrangler.toml` must point at production. `.github/workflows/scrape-cron.yml` is a manual-only fallback that annotates the run with failing venues — no Vercel Cron configuration needed.

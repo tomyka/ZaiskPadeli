@@ -144,7 +144,7 @@
             <svg :class="['h-4 w-4', refreshing ? 'animate-spin' : '']" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
-            <span v-if="data" class="tabular-nums">{{ formatTime(data.fetchedAt) }}</span>
+            <span v-if="data" class="tabular-nums">{{ formatClock(data.fetchedAt) }}</span>
           </button>
         </div>
 
@@ -197,7 +197,7 @@
 
         <!-- Data freshness indicator -->
         <p v-if="data" class="mt-6 text-center text-[11px] text-gray-600">
-          Atnaujinta {{ formatTime(data.fetchedAt) }}{{ data.fromCache && data.cacheAgeSeconds ? ` (prieš ${Math.max(1, Math.round(data.cacheAgeSeconds / 60))} min)` : '' }}
+          Atnaujinta {{ formatClock(data.fetchedAt) }}{{ data.fromCache && data.cacheAgeSeconds ? ` (prieš ${Math.max(1, Math.round(data.cacheAgeSeconds / 60))} min)` : '' }}
         </p>
       </template>
     </div>
@@ -247,7 +247,7 @@ import { ACTIVE_CITIES } from '~~/server/utils/venues'
 import { MAX_DAYS_AHEAD, addDays, byDayTime, currentMinutesFor, dayOfWeek, isValidIsoDate, todayLT } from '~~/server/utils/time'
 import { buildAvailabilityView, nearestCity, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
-import { ltPlural } from '~/utils/format'
+import { formatClock, ltPlural } from '~/utils/format'
 
 // Remembered across visits (cookie): city, duration, court type, indoor
 const { city: selectedCity, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
@@ -422,11 +422,6 @@ function detectCity() {
     () => { gpsState.value = 'error' },
     { timeout: 8000 }
   )
-}
-
-function formatTime(iso: string) {
-  try { return new Date(iso).toLocaleTimeString('lt-LT', { hour: '2-digit', minute: '2-digit' }) }
-  catch { return iso }
 }
 
 useHead({ title: 'Žaisk Padelį — Laisvos aikštelės' })

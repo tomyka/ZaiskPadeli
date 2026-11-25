@@ -14,14 +14,50 @@
  * Response contract (consumed by scraper-kaunopadelis.ts):
  *   200 { html, status, loginStatus, error? }   — html is '' when login/grid failed
  *   4xx/5xx { error }
+ *
+ * The Worker also owns the cache pre-warm schedule: its cron trigger (wrangler.toml)
+ * calls the app's /api/cron/scrape — see `scheduled` below.
  */
 
 import { LOGIN_REJECTED, loginAndFetchGrid, type NTennisSite } from '../../server/utils/ntennis-fetch'
+import type { ScrapeReport } from '../../server/utils/types'
 
 interface Env {
   PROXY_TOKEN: string
   KAUNOPADELIS_LOGIN: string
   KAUNOPADELIS_PASSWORD: string
+  /** Base URL of the app whose cache the cron pre-warms ([vars] in wrangler.toml) */
+  APP_URL: string
+  /** Same value as the app's CRON_SECRET */
+  CRON_SECRET: string
+}
+
+/** Under the 5-minute schedule, so a hung run can't overlap the next one */
+const SCRAPE_TIMEOUT_MS = 4 * 60_000
+
+/**
+ * Pre-warm the app's availability cache. Throws on failure — including a date where every
+ * venue errors with nothing carried over (an outage) — so the run shows as failed in the dashboard.
+ */
+async function triggerScrape(env: Env): Promise<void> {
+  if (!env.APP_URL || !env.CRON_SECRET) throw new Error('APP_URL or CRON_SECRET not configured')
+
+  const resp = await fetch(`${env.APP_URL}/api/cron/scrape`, {
+    headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
+    signal: AbortSignal.timeout(SCRAPE_TIMEOUT_MS),
+  })
+  if (!resp.ok) throw new Error(`Scrape returned HTTP ${resp.status}`)
+
+  // Scraper-health canary, visible in `wrangler tail` and the Worker's logs
+  const { results } = (await resp.json()) as { results: Record<string, ScrapeReport> }
+  const outages: string[] = []
+  for (const [date, r] of Object.entries(results)) {
+    const line = `[cron] ${date} venues=${r.venues} errors=${r.errors} ms=${r.ms}`
+    if (r.failed.length || r.carried.length) console.warn(`${line} failed=${r.failed.join(',')} carried=${r.carried.join(',')}`)
+    else console.log(line)
+    if (r.venues > 0 && r.errors === r.venues) outages.push(date)
+  }
+  if (outages.length) throw new Error(`Every venue failed for ${outages.join(', ')}`)
 }
 
 /** Sites this proxy may fetch, with credentials resolved from Worker secrets */
@@ -81,6 +117,10 @@ export default {
     } catch (err: any) {
       return json({ error: err?.message ?? 'Unknown error' }, 500)
     }
+  },
+
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await triggerScrape(env)
   },
 }
 
