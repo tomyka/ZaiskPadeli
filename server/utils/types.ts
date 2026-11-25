@@ -15,6 +15,14 @@ export interface Court {
   slots: TimeSlot[]
 }
 
+/**
+ * - ok:     scraped; `courts` are current
+ * - empty:  scraped fine, but the venue has no courts that day
+ * - failed: the scrape failed and there is no recent data
+ * - stale:  the scrape failed; `courts` are the last good data, from `lastUpdated`
+ */
+export type VenueStatus = 'ok' | 'empty' | 'failed' | 'stale'
+
 export interface Venue {
   id: string          // "padelhub", "tennisspace", "padelhouse", "kaunopadelis"
   name: string        // "Balcia Padel Hub"
@@ -23,19 +31,18 @@ export interface Venue {
   municipality: Municipality
   bookingUrl: string
   courts: Court[]
-  lastUpdated: string // ISO timestamp
-  error?: string
-  /** This scrape failed; courts are the last good data from `lastUpdated` (see carryOverFailedVenues) */
-  carriedOver?: true
+  /** When `courts` were scraped (ISO) */
+  lastUpdated: string
+  status: VenueStatus
 }
 
 /** Per-date health report from /api/cron/scrape, read by the cf-proxy Worker's cron */
 export interface ScrapeReport {
   venues: number
-  /** Venues showing an error (failed or empty day) */
+  /** Venues with no bookable data: status failed or empty */
   errors: number
   failed: string[]
-  /** Scrape failed but last good data is still shown */
+  /** Scrape failed but last good data is still shown: status stale */
   carried: string[]
   ms: number
 }

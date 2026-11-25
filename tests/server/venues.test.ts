@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Court } from '../../server/utils/types'
 import { MUNICIPALITIES } from '../../server/utils/regions'
 import { ACTIVE_COUNTIES, ACTIVE_MUNICIPALITIES, VENUES, activeMunicipalitiesIn, venueInfo, type VenueInfo } from '../../server/utils/venues'
-import { runScraper, SCRAPERS, VENUE_ERROR } from '../../server/utils/scraper-all'
+import { runScraper, SCRAPERS } from '../../server/utils/scraper-all'
 
 describe('venue registry', () => {
   it('has unique ids', () => {
@@ -55,7 +55,7 @@ describe('runScraper', () => {
   it('wraps courts with registry metadata and applies the indoor default', async () => {
     const venue = await runScraper(info, async () => [court(), court({ id: 'out', indoor: false })], '2026-11-25')
     expect(venue).toMatchObject({ id: 'test', name: 'Test', municipality: 'Kaunas', bookingUrl: 'https://x' })
-    expect(venue.error).toBeUndefined()
+    expect(venue.status).toBe('ok')
     expect(venue.courts.map(c => c.indoor)).toEqual([true, false])
   })
 
@@ -68,7 +68,7 @@ describe('runScraper', () => {
   it('turns a thrown error into a user-facing error, without throwing', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const venue = await runScraper(info, async () => { throw new Error('boom') }, '2026-11-25')
-    expect(venue.error).toBe(VENUE_ERROR.failed)
+    expect(venue.status).toBe('failed')
     expect(venue.courts).toEqual([])
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[test]'), 'boom')
     warn.mockRestore()
@@ -76,13 +76,13 @@ describe('runScraper', () => {
 
   it('flags an empty result', async () => {
     const venue = await runScraper(info, async () => [], '2026-11-25')
-    expect(venue.error).toBe(VENUE_ERROR.empty)
+    expect(venue.status).toBe('empty')
   })
 
   it('gives up on a hanging scraper after the deadline', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const venue = await runScraper(info, () => new Promise(() => {}), '2026-11-25', 20)
-    expect(venue.error).toBe(VENUE_ERROR.failed)
+    expect(venue.status).toBe('failed')
     warn.mockRestore()
   })
 })

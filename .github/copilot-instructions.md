@@ -89,7 +89,7 @@ interface Court {
 
 ### Scraper error handling
 
-Scrapers **throw** on any failure (HTTP error, login failure, unexpected markup) with a descriptive message. The runner in `scraper-all.ts` catches it, logs `[venueId] scrape failed` with the detail, and sets a uniform Lithuanian `venue.error` — so one broken venue never fails the response. It also enforces a per-venue deadline and flags venues that return no courts. Don't build `Venue` objects or catch-and-swallow inside scrapers.
+Scrapers **throw** on any failure (HTTP error, login failure, unexpected markup) with a descriptive message. The runner in `scraper-all.ts` catches it, logs `[venueId] scrape failed` with the detail, and sets `venue.status = 'failed'` — so one broken venue never fails the response. It also enforces a per-venue deadline and marks venues that return no courts `'empty'`. The store turns a failed venue with recent good data into `'stale'`; the client maps status to Lithuanian wording in `app/utils/venue-status.ts`. Don't build `Venue` objects or catch-and-swallow inside scrapers.
 
 ### Past slots (today only)
 

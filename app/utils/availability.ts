@@ -3,6 +3,7 @@ import type { Court, CourtKind, Venue } from '../../server/utils/types'
 import { inRegion, type RegionFilter } from '../../server/utils/regions'
 import { byDayTime, dayMinutes, hasSlotStarted } from '../../server/utils/time'
 import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueSessions } from './sessions'
+import { venueProblem } from './venue-status'
 
 /**
  * What the availability page shows for a set of filters: which venues, which
@@ -60,7 +61,7 @@ export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMi
       strip: dayStrip(courts, currentMinutes),
     }
   })
-  const views = all.filter(v => v.sessions.starts.length > 0 || v.venue.error)
+  const views = all.filter(v => v.sessions.starts.length > 0 || venueProblem(v.venue))
 
   const times = new Set<string>()
   for (const { courts } of all)

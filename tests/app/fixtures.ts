@@ -13,5 +13,5 @@ export function court(id: string, pattern: string, first = '18:00', price: numbe
 }
 
 export function venue(id: string, municipality: Municipality, courts: Court[], over: Partial<Venue> = {}): Venue {
-  return { id, name: id, address: '', municipality, bookingUrl: `https://${id}.example`, courts, lastUpdated: '', ...over }
+  return { id, name: id, address: '', municipality, bookingUrl: `https://${id}.example`, courts, lastUpdated: '', status: 'ok', ...over }
 }

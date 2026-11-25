@@ -2,7 +2,7 @@
   <article :class="['overflow-hidden rounded-2xl border bg-white shadow-sm',
     selectedTime ? 'border-ball ring-1 ring-ball' : 'border-court-line']">
     <!-- Summary row: toggles the per-court view -->
-    <button type="button" :aria-expanded="expanded" :disabled="!!venue.error"
+    <button type="button" :aria-expanded="expanded" :disabled="!!problem"
       class="flex w-full items-center gap-3 px-4 pb-2 pt-3 text-left disabled:cursor-default"
       @click="emit('toggle')">
       <span class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: accent }" aria-hidden="true"></span>
@@ -10,7 +10,7 @@
         <span class="block truncate font-display text-[20px] font-semibold leading-tight text-ink">{{ venue.name }}</span>
         <span class="block text-xs leading-snug text-gray-600">{{ meta }}</span>
       </span>
-      <template v-if="!venue.error">
+      <template v-if="!problem">
         <span class="shrink-0 text-[13px] font-bold text-ink tabular-nums">
           {{ sessions.starts.length }} {{ ltPlural(sessions.starts.length, 'laikas', 'laikai', 'laikų') }}
         </span>
@@ -22,7 +22,7 @@
       <span v-else class="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">Klaida</span>
     </button>
 
-    <p v-if="venue.error" class="px-4 pb-4 text-sm text-gray-600">{{ venue.error }}</p>
+    <p v-if="problem" class="px-4 pb-4 text-sm text-gray-600">{{ problem }}</p>
 
     <template v-else>
       <!-- Day availability strip -->
@@ -92,7 +92,8 @@
 import type { Court, Venue } from '~~/server/utils/types'
 import { venueInfo } from '~~/server/utils/venues'
 import { SLOT_MIN } from '~~/server/utils/time'
-import { formatClock, formatPrice, ltPlural } from '~/utils/format'
+import { formatPrice, ltPlural } from '~/utils/format'
+import { staleNote, venueProblem } from '~/utils/venue-status'
 import { sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
 import { chipPrice, venuePricesByKind } from '~/utils/availability'
 
@@ -121,8 +122,10 @@ const STRIP_CLASS: Record<StripCell['state'], string> = {
 
 const accent = computed(() => venueInfo(props.venue.id)?.color ?? '#9ca3af')
 
+const problem = computed(() => venueProblem(props.venue))
+
 const meta = computed(() => {
-  if (props.venue.error) return props.venue.address
+  if (problem.value) return props.venue.address
   const n = props.courts.length
   const parts: string[] = props.showMunicipality ? [props.venue.municipality] : []
   parts.push(`${n} ${ltPlural(n, 'kortas', 'kortai', 'kortų')}`)
@@ -130,8 +133,9 @@ const meta = computed(() => {
   const p = venuePricesByKind(props.sessions.starts)
   if (p.doubles !== null) parts.push(`nuo ${formatPrice(p.doubles)} / ${props.duration} min`)
   if (p.singles !== null) parts.push(`1v1 nuo ${formatPrice(p.singles)}`)
-  // This scrape failed and older data is shown: say how old, since the page header shows the newer fetch time
-  if (props.venue.carriedOver) parts.push(`duomenys ${formatClock(props.venue.lastUpdated)}`)
+  // Older data after a failed scrape: say how old, since the page header shows the newer fetch time
+  const stale = staleNote(props.venue)
+  if (stale) parts.push(stale)
   // Non-breaking spaces keep each phrase ("1v1 nuo €30") on one line when the info line wraps
   return parts.map(part => part.replace(/ /g, '\u00a0')).join(' · ')
 })

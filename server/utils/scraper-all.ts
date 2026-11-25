@@ -43,12 +43,6 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
  *  Must exceed the slowest legitimate path: nTennis guest login = 4 sequential 8 s steps. */
 const VENUE_DEADLINE_MS = 40_000
 
-/** User-facing (Lithuanian) messages; technical detail goes to the log. */
-export const VENUE_ERROR = {
-  failed: 'Nepavyko gauti duomenų',
-  empty: 'Nėra duomenų šiai dienai',
-} as const
-
 function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const deadline = new Promise<never>((_, reject) => {
@@ -72,6 +66,7 @@ export async function runScraper(
     bookingUrl: info.bookingUrl,
     courts: [],
     lastUpdated: new Date().toISOString(),
+    status: 'ok',
   }
 
   try {
@@ -82,10 +77,10 @@ export async function runScraper(
       indoor: c.indoor ?? info.indoor,
       slots: [...c.slots].sort((a, b) => byDayTime(a.time, b.time)),
     }))
-    if (venue.courts.length === 0) venue.error = VENUE_ERROR.empty
+    if (venue.courts.length === 0) venue.status = 'empty'
   } catch (err) {
     console.warn(`[${info.id}] scrape failed for ${date}:`, (err as Error).message)
-    venue.error = VENUE_ERROR.failed
+    venue.status = 'failed'
   }
 
   return venue

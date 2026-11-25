@@ -8,7 +8,7 @@ import type { ScrapeReport } from '../../utils/types'
  * the GitHub Actions workflow (.github/workflows/scrape-cron.yml) is a manual fallback.
  * Protected by CRON_SECRET to prevent external abuse.
  *
- * Response per date: `failed` = venues showing an error, `carried` = venues whose scrape
+ * Response per date: `failed` = venues with no bookable data (failed or empty day), `carried` = venues whose scrape
  * failed but still show their last good data (see availability-store.ts).
  */
 export default defineEventHandler(async (event) => {
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   for (const date of dates) {
     const start = Date.now()
     const { data, carried } = await useAvailabilityStore().refresh(date)
-    const failed = data.venues.filter(v => v.error).map(v => v.id)
+    const failed = data.venues.filter(v => v.status === 'failed' || v.status === 'empty').map(v => v.id)
     results[date] = { venues: data.venues.length, errors: failed.length, failed, carried, ms: Date.now() - start }
   }
 

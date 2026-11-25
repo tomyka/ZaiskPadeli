@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createAvailabilityStore, memoryAvailabilityStorage } from '../../server/utils/availability-store'
-import { VENUE_ERROR } from '../../server/utils/scraper-all'
 import type { Court, Venue } from '../../server/utils/types'
 
 const DATE = '2026-11-26'
@@ -22,10 +21,10 @@ function setup() {
 }
 
 function good(id: string, now: number): Venue {
-  return { id, name: id, address: '', municipality: 'Kaunas', bookingUrl: '', courts: [court], lastUpdated: new Date(now).toISOString() }
+  return { id, name: id, address: '', municipality: 'Kaunas', bookingUrl: '', courts: [court], lastUpdated: new Date(now).toISOString(), status: 'ok' }
 }
 function failed(id: string, now: number): Venue {
-  return { ...good(id, now), courts: [], error: VENUE_ERROR.failed }
+  return { ...good(id, now), courts: [], status: 'failed' }
 }
 
 describe('availability store', () => {
@@ -69,8 +68,7 @@ describe('availability store', () => {
     scrapeReturns(now => [failed('a', now), good('b', now)])
     const { data, carried } = await store.refresh(DATE)
     expect(carried).toEqual(['a'])
-    expect(data.venues[0]).toMatchObject({ id: 'a', courts: [court], carriedOver: true, lastUpdated: before.venues[0]!.lastUpdated })
-    expect(data.venues[0]).not.toHaveProperty('error')
+    expect(data.venues[0]).toMatchObject({ id: 'a', courts: [court], status: 'stale', lastUpdated: before.venues[0]!.lastUpdated })
   })
 
   it('carries over every venue when the whole scrape fails', async () => {
@@ -80,7 +78,7 @@ describe('availability store', () => {
     scrapeReturns(now => [failed('a', now), failed('b', now)])
     const { data, carried } = await store.refresh(DATE)
     expect(carried).toEqual(['a', 'b'])
-    expect(data.venues.every(v => !v.error && v.courts.length)).toBe(true)
+    expect(data.venues.every(v => v.status === 'stale' && v.courts.length)).toBe(true)
   })
 
   it('lets carried data expire by the venue\'s own age, not the entry\'s', async () => {
@@ -92,7 +90,7 @@ describe('availability store', () => {
     advance(25 * MIN)
     const { data, carried } = await store.refresh(DATE) // entry is 25 min old, venue a's data 65 min
     expect(carried).toEqual([])
-    expect(data.venues[0]!.error).toBe(VENUE_ERROR.failed)
+    expect(data.venues[0]!.status).toBe('failed')
   })
 
   it('does not replace an empty day or a venue with no previous data', async () => {
@@ -100,10 +98,10 @@ describe('availability store', () => {
     scrapeReturns(now => [good('a', now)])
     await store.get(DATE)
     advance(10 * MIN)
-    scrapeReturns(now => [{ ...good('a', now), courts: [], error: VENUE_ERROR.empty }, failed('c', now)])
+    scrapeReturns(now => [{ ...good('a', now), courts: [], status: 'empty' }, failed('c', now)])
     const { data, carried } = await store.refresh(DATE)
     expect(carried).toEqual([])
-    expect(data.venues.map(v => v.error)).toEqual([VENUE_ERROR.empty, VENUE_ERROR.failed])
+    expect(data.venues.map(v => v.status)).toEqual(['empty', 'failed'])
   })
 
   it('ignores stored data past the stale window', async () => {

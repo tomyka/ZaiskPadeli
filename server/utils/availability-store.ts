@@ -1,5 +1,5 @@
 import { kv } from '@vercel/kv'
-import { VENUE_ERROR, scrapeAllVenues } from './scraper-all'
+import { scrapeAllVenues } from './scraper-all'
 import type { AvailabilityResponse, Venue } from './types'
 
 /**
@@ -19,8 +19,9 @@ import type { AvailabilityResponse, Venue } from './types'
  */
 
 // Bump when the stored shape or its guarantees change
-// (v2: slots in venue-day order; v3: venues carry municipality; v4: store owns stamping)
-const KEY_PREFIX = 'avail:v4'
+// (v2: slots in venue-day order; v3: venues carry municipality; v4: store owns stamping;
+//  v5: venue status replaces error text + carriedOver)
+const KEY_PREFIX = 'avail:v5'
 const FRESH_SEC = 5 * 60
 const STALE_SEC = 60 * 60
 
@@ -100,9 +101,9 @@ export function createAvailabilityStore(deps: {
 }
 
 /**
- * Stand in for venues whose scrape failed with their last good courts, so one upstream
- * blip doesn't wipe a venue (or, on a network outage, every venue) from the page.
- * Only `failed` venues are replaced — an empty day is a real answer.
+ * Stand in for venues whose scrape failed with their last good courts (status 'stale'),
+ * so one upstream blip doesn't wipe a venue (or, on a network outage, every venue) from
+ * the page. Only 'failed' venues are replaced — an empty day is a real answer.
  */
 function carryOverFailedVenues(
   fresh: Venue[],
@@ -113,15 +114,14 @@ function carryOverFailedVenues(
   const carried: string[] = []
 
   const venues = fresh.map((venue): Venue => {
-    if (venue.error !== VENUE_ERROR.failed) return venue
+    if (venue.status !== 'failed') return venue
     const prev = prevById.get(venue.id)
-    if (!prev || prev.error || prev.courts.length === 0) return venue
+    if (!prev || (prev.status !== 'ok' && prev.status !== 'stale') || prev.courts.length === 0) return venue
     const age = now - Date.parse(prev.lastUpdated)
     if (!Number.isFinite(age) || age > STALE_SEC * 1000) return venue
 
     carried.push(venue.id)
-    const { error: _error, ...rest } = venue
-    return { ...rest, courts: prev.courts, lastUpdated: prev.lastUpdated, carriedOver: true }
+    return { ...venue, status: 'stale', courts: prev.courts, lastUpdated: prev.lastUpdated }
   })
 
   return { venues, carried }

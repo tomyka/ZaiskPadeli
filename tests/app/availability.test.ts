@@ -30,7 +30,7 @@ describe('buildAvailabilityView', () => {
   const kaunas = venue('k', 'Kaunas', [court('k1', '1100'), court('k2', '0011', '18:00', 10, { type: 'singles' })])
   const vilnius = venue('v', 'Vilnius', [court('v1', '1100')])
   const full = venue('f', 'Kaunas', [court('f1', '0000')])
-  const broken = venue('b', 'Kaunas', [], { error: 'Nepavyko gauti duomenų' })
+  const broken = venue('b', 'Kaunas', [], { status: 'failed' })
 
   it('filters by county, keeps errored venues, drops venues with no session', () => {
     const view = buildAvailabilityView([kaunas, vilnius, full, broken], { ...ANY, county: 'Kauno' }, NOT_TODAY)
