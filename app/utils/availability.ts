@@ -9,7 +9,6 @@ import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueS
  * only binds the result.
  */
 
-
 /** A court's type for display and filtering; an unknown type counts as doubles, the common case. */
 export function courtKind(court: Court): CourtKind {
   return court.type === 'singles' ? 'singles' : 'doubles'
