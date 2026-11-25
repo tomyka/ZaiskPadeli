@@ -5,7 +5,7 @@ import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueS
 
 /**
  * What the availability page shows for a set of filters: which venues, which
- * courts, which bookable sessions, and the session sheet. Pure, so the page
+ * courts, which bookable sessions, and the selected session. Pure, so the page
  * only binds the result.
  */
 
@@ -77,7 +77,7 @@ export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMi
   }
 }
 
-export interface SessionSheet {
+export interface SelectedSession {
   venue: Venue
   start: SessionStart
   /** A few other start times at the same venue to jump to */
@@ -86,8 +86,8 @@ export interface SessionSheet {
 
 const OTHER_STARTS = 8
 
-/** The sheet for one venue + start time, or null once that session is gone (e.g. after a refresh). */
-export function resolveSession(view: AvailabilityView, venueId: string, time: string): SessionSheet | null {
+/** The selected session for one venue + start time, or null once that session is gone (e.g. after a refresh). */
+export function resolveSession(view: AvailabilityView, venueId: string, time: string): SelectedSession | null {
   const v = view.venues.find(x => x.venue.id === venueId)
   const start = v?.sessions.starts.find(s => s.time === time)
   if (!v || !start) return null

@@ -107,8 +107,7 @@
 
       <!-- Court filters: always visible on desktop, in a sheet on phones -->
       <div class="hidden space-y-5 lg:block">
-        <SegmentedControl v-model="filterType" legend="Kortas" :options="TYPE_OPTIONS" />
-        <SegmentedControl v-model="filterIndoor" legend="Vieta" :options="INDOOR_OPTIONS" />
+        <CourtFilters v-model:type="filterType" v-model:indoor="filterIndoor" />
         <button type="button" @click="clearFilters"
           class="min-h-[44px] text-sm font-semibold text-emerald-700 hover:text-emerald-800">
           Išvalyti filtrus
@@ -150,13 +149,13 @@
         </div>
 
         <!-- Cards: one column on phones; two on desktop (only on very wide screens while the session panel takes room) -->
-        <div :class="['grid items-start gap-3', panelSheet ? '2xl:grid-cols-2' : 'lg:grid-cols-2']">
+        <div :class="['grid items-start gap-3', panelSession ? '2xl:grid-cols-2' : 'lg:grid-cols-2']">
           <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id"
             :class="['venue-card', expanded.has(v.venue.id) ? 'lg:col-span-full' : '']"
             :style="{ animationDelay: `${vIdx * 50}ms` }"
             :venue="v.venue" :courts="v.courts" :sessions="v.sessions" :strip="v.strip"
             :duration="duration" :expanded="expanded.has(v.venue.id)"
-            :selected-time="panelSheet?.venue.id === v.venue.id ? panelSheet.start.time : null"
+            :selected-time="panelSession?.venue.id === v.venue.id ? panelSession.start.time : null"
             @toggle="toggleVenue(v.venue.id)"
             @pick="time => openSession(v.venue.id, time)" />
         </div>
@@ -199,31 +198,28 @@
     </div>
 
     <!-- ═══ SESSION PANEL (desktop) ═══ -->
-    <aside v-if="panelSheet" ref="panelEl" tabindex="-1" aria-label="Pasirinktas laikas"
+    <aside v-if="panelSession" ref="panelEl" tabindex="-1" aria-label="Pasirinktas laikas"
       class="sticky top-20 max-h-[calc(100vh-6rem)] w-[22rem] shrink-0 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-lg outline-none">
-      <button type="button" aria-label="Uždaryti" @click="sheetKey = null"
+      <button type="button" aria-label="Uždaryti" @click="selectedKey = null"
         class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>
       </button>
-      <SessionDetails :sheet="panelSheet" :duration="duration" :day-label="selectedDayLabel"
-        @pick="time => openSession(panelSheet!.venue.id, time)" />
+      <SessionDetails :session="panelSession" :duration="duration" :day-label="selectedDayLabel"
+        @pick="time => openSession(panelSession!.venue.id, time)" />
     </aside>
 
     <!-- ═══ SESSION SHEET (phones) ═══ -->
-    <BottomSheet :open="!!sheet && !isDesktop" :show-title="false"
-      :title="shownSheet ? `${shownSheet.venue.name}, ${shownSheet.start.time}` : ''" @close="sheetKey = null">
-      <SessionDetails v-if="shownSheet" :sheet="shownSheet" :duration="duration" :day-label="selectedDayLabel"
-        @pick="time => openSession(shownSheet!.venue.id, time)" />
+    <BottomSheet :open="!!selected && !isDesktop" :show-title="false"
+      :title="sheetSession ? `${sheetSession.venue.name}, ${sheetSession.start.time}` : ''" @close="selectedKey = null">
+      <SessionDetails v-if="sheetSession" :session="sheetSession" :duration="duration" :day-label="selectedDayLabel"
+        @pick="time => openSession(sheetSession!.venue.id, time)" />
     </BottomSheet>
 
     <!-- ═══ FILTER SHEET (phones) ═══ -->
     <BottomSheet :open="filtersOpen && !isDesktop" title="Filtrai" @close="filtersOpen = false">
-      <div class="mb-6 space-y-5">
-        <SegmentedControl v-model="filterType" legend="Kortas" :options="TYPE_OPTIONS" />
-        <SegmentedControl v-model="filterIndoor" legend="Vieta" :options="INDOOR_OPTIONS" />
-      </div>
+      <CourtFilters v-model:type="filterType" v-model:indoor="filterIndoor" class="mb-6" />
       <div class="flex gap-2">
         <button type="button" @click="clearFilters"
           class="h-12 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50">
@@ -243,19 +239,12 @@ import type { AvailabilityResponse } from '~~/server/utils/types'
 import { CITIES } from '~~/server/utils/types'
 import { ACTIVE_CITIES } from '~~/server/utils/venues'
 import { MAX_DAYS_AHEAD, addDays, currentMinutesFor, dayOfWeek, todayLT } from '~~/server/utils/time'
-import { buildAvailabilityView, nearestCity, resolveSession, type CourtKind, type SessionSheet } from '~/utils/availability'
+import { buildAvailabilityView, nearestCity, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
 import { ltPlural } from '~/utils/format'
 
 // Remembered across visits (cookie): city, duration, court type, indoor
 const { city: selectedCity, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
-
-const TYPE_OPTIONS: { value: CourtKind | null; label: string }[] = [
-  { value: null, label: 'Visi' }, { value: 'doubles', label: '2v2' }, { value: 'singles', label: '1v1' },
-]
-const INDOOR_OPTIONS: { value: boolean | null; label: string }[] = [
-  { value: null, label: 'Visi' }, { value: true, label: 'Vidaus' }, { value: false, label: 'Lauko' },
-]
 
 // Re-read every minute so today's past starts drop off and the date pills roll over at midnight
 const nowTick = ref(Date.now())
@@ -279,8 +268,8 @@ watch(today, (now, before) => { if (selectedDate.value === before) selectedDate.
 const fromTime = ref('')
 const filtersOpen = ref(false)
 const expanded = ref(new Set<string>())
-/** The session whose sheet is open */
-const sheetKey = ref<{ venueId: string; time: string } | null>(null)
+/** The selected session (venue + start time), shown in the phone sheet or the desktop panel */
+const selectedKey = ref<{ venueId: string; time: string } | null>(null)
 const gpsState = ref<'idle' | 'loading' | 'done' | 'error'>('idle')
 const refreshing = ref(false)
 
@@ -301,7 +290,7 @@ const selectedDayLabel = computed(() =>
   quickDays.value.find(d => d.date === selectedDate.value)?.label ?? selectedDate.value
 )
 
-watch(selectedDate, () => { expanded.value = new Set(); sheetKey.value = null })
+watch(selectedDate, () => { expanded.value = new Set(); selectedKey.value = null })
 watch(selectedCity, () => { expanded.value = new Set() })
 
 const { data, pending, error, refresh: rawRefresh } = useFetch<AvailabilityResponse>('/api/availability', {
@@ -339,16 +328,16 @@ function toggleVenue(id: string) {
 const isDesktop = useMediaQuery('(min-width: 1024px)')
 
 function openSession(venueId: string, time: string) {
-  sheetKey.value = { venueId, time }
+  selectedKey.value = { venueId, time }
 }
 
 /** Resolved from live data, so it closes itself if a refresh removes the session */
-const sheet = computed<SessionSheet | null>(() =>
-  sheetKey.value ? resolveSession(view.value, sheetKey.value.venueId, sheetKey.value.time) : null
+const selected = computed<SelectedSession | null>(() =>
+  selectedKey.value ? resolveSession(view.value, selectedKey.value.venueId, selectedKey.value.time) : null
 )
 
 /** Shown in the side panel; also drives the card highlight and the narrower grid */
-const panelSheet = computed(() => (isDesktop.value ? sheet.value : null))
+const panelSession = computed(() => (isDesktop.value ? selected.value : null))
 
 // The filter sheet is phone-only: don't let it reappear after the window narrows again
 watch(isDesktop, (desktop) => { if (desktop) filtersOpen.value = false })
@@ -357,7 +346,7 @@ watch(isDesktop, (desktop) => { if (desktop) filtersOpen.value = false })
 // focus returns to the time button that opened it
 const panelEl = ref<HTMLElement | null>(null)
 let panelOpener: HTMLElement | null = null
-watch(() => !!panelSheet.value, async (open) => {
+watch(() => !!panelSession.value, async (open) => {
   if (open) {
     panelOpener = document.activeElement as HTMLElement | null
     await nextTick()
@@ -368,14 +357,14 @@ watch(() => !!panelSheet.value, async (open) => {
   }
 })
 function onPanelKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && panelSheet.value) sheetKey.value = null
+  if (e.key === 'Escape' && panelSession.value) selectedKey.value = null
 }
 onMounted(() => window.addEventListener('keydown', onPanelKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onPanelKey))
 
-/** Last open sheet, kept after closing so the content doesn't blank out during the leave transition */
-const shownSheet = shallowRef<SessionSheet | null>(null)
-watch(sheet, (s) => { if (s) shownSheet.value = s })
+/** Last selected session, kept after the sheet closes so the content doesn't blank out during the leave transition */
+const sheetSession = shallowRef<SelectedSession | null>(null)
+watch(selected, (s) => { if (s) sheetSession.value = s })
 
 function clearFilters() {
   fromTime.value = ''

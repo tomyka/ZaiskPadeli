@@ -72,9 +72,9 @@ describe('resolveSession', () => {
   const view = buildAvailabilityView([v], ANY, NOT_TODAY)
 
   it('lists the free courts for that start and the other starts', () => {
-    const sheet = resolveSession(view, 'x', '18:00')!
-    expect(sheet.start.courts.map(c => c.court.id)).toEqual(['x1', 'x2'])
-    expect(sheet.others.map(s => s.time)).toEqual(['18:30', '19:00', '19:30', '20:00'])
+    const selected = resolveSession(view, 'x', '18:00')!
+    expect(selected.start.courts.map(c => c.court.id)).toEqual(['x1', 'x2'])
+    expect(selected.others.map(s => s.time)).toEqual(['18:30', '19:00', '19:30', '20:00'])
   })
 
   it('returns null when the session no longer exists', () => {
