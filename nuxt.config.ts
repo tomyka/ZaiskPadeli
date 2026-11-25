@@ -8,13 +8,6 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt',
   ],
 
-  // Display font (brand, venue names, day numbers, times), bundled rather than loaded from Google Fonts
-  css: [
-    '@fontsource/barlow-condensed/500.css',
-    '@fontsource/barlow-condensed/600.css',
-    '@fontsource/barlow-condensed/700.css',
-  ],
-
   app: {
     head: {
       title: 'Žaisk Padelį',
