@@ -67,20 +67,14 @@
       <!-- County (+ more filters on phones), then its municipalities when it has several -->
       <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Apskritis</p>
       <div class="mb-4 flex items-center gap-1.5 lg:mb-5">
-        <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-court-line bg-white pl-3 pr-2 text-sm text-gray-800 focus-within:ring-[3px] focus-within:ring-ball-deep focus-within:ring-offset-2 lg:flex-1">
-          <svg class="h-4 w-4 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-          </svg>
-          <span class="sr-only">Apskritis</span>
-          <select v-model="county" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-5 font-medium focus:outline-none">
-            <option :value="null">Visa Lietuva</option>
-            <option v-for="o in COUNTY_OPTIONS" :key="o.county" :value="o.county">{{ o.label }}</option>
-          </select>
-          <svg class="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
-          </svg>
-        </label>
+        <SelectMenu v-model="county" label="Apskritis" :options="COUNTY_OPTIONS" :active="county !== null" class="min-w-0 lg:flex-1">
+          <template #icon>
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+            </svg>
+          </template>
+        </SelectMenu>
         <button type="button" @click="detectCounty" :disabled="gpsState === 'loading'"
           :aria-label="gpsState === 'error' ? 'Vieta neprieinama' : 'Nustatyti apskritį pagal mano vietą'"
           :title="gpsState === 'error' ? 'GPS neprieinamas' : 'Mano vieta'"

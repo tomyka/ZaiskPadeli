@@ -95,7 +95,7 @@ const FIND = (q) => `(() => {
   let list;
   if (q.selector) list = [...document.querySelectorAll(q.selector)].filter(visible);
   else {
-    const all = [...document.querySelectorAll('button, a, [role=button], [role=tab], label, input, select, summary, [tabindex]')].filter(visible);
+    const all = [...document.querySelectorAll('button, a, [role=button], [role=tab], [role=option], label, input, select, summary, [tabindex]')].filter(visible);
     const t = q.text.toLowerCase();
     list = all.filter(el => name(el).toLowerCase() === t);
     if (!list.length) list = all.filter(el => name(el).toLowerCase().includes(t));

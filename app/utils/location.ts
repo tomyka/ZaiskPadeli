@@ -46,11 +46,15 @@ export function isIn(loc: Location, municipality: Municipality): boolean {
   return !loc.county || countyOf(municipality) === loc.county
 }
 
-/** The county select's options, "(greitai)" marking counties without venues yet */
-export const COUNTY_OPTIONS: readonly { county: County; label: string }[] = COUNTIES.map(county => ({
-  county,
-  label: `${county} apskr.${ACTIVE_COUNTIES.has(county) ? '' : ' (greitai)'}`,
-}))
+/** The county picker's options: everywhere, then every county; "greitai" marks counties without venues yet */
+export const COUNTY_OPTIONS: { value: County | null; label: string; hint?: string }[] = [
+  { value: null, label: 'Visa Lietuva' },
+  ...COUNTIES.map(county => ({
+    value: county,
+    label: `${county} apskr.`,
+    ...(ACTIVE_COUNTIES.has(county) ? {} : { hint: 'greitai' }),
+  })),
+]
 
 export interface LocationChoices {
   /** Municipalities to narrow the county to, city first; empty when there is no choice to make */

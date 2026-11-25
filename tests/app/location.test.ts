@@ -58,10 +58,11 @@ describe('locationChoices', () => {
     expect(locationChoices(EVERYWHERE).noVenuesText).toBeNull()
   })
 
-  it('labels counties without venues as coming soon', () => {
-    const label = (c: string) => COUNTY_OPTIONS.find(o => o.county === c)?.label
-    expect(label('Kauno')).toBe('Kauno apskr.')
-    expect(label('Utenos')).toBe('Utenos apskr. (greitai)')
-    expect(COUNTY_OPTIONS).toHaveLength(10)
+  it('offers everywhere first, then all counties, hinting those without venues', () => {
+    const option = (c: string | null) => COUNTY_OPTIONS.find(o => o.value === c)
+    expect(COUNTY_OPTIONS[0]).toEqual({ value: null, label: 'Visa Lietuva' })
+    expect(option('Kauno')).toEqual({ value: 'Kauno', label: 'Kauno apskr.' })
+    expect(option('Utenos')).toEqual({ value: 'Utenos', label: 'Utenos apskr.', hint: 'greitai' })
+    expect(COUNTY_OPTIONS).toHaveLength(11)
   })
 })

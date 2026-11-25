@@ -116,6 +116,17 @@ Uses `app.moove.lt/api/v1/settings/tickets/user?locationIds=227&sport=padel&...`
 
 The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. Availability: `POST /wp-admin/admin-ajax.php` with `action=padel_get_available_slots&nonce&court_id&date` → one entry per 30-min slot with its own price and `available`. The club is open until 02:30 and lists after-midnight slots under the same date; the scraper drops them (our grid is one calendar day). Dates past the ~30-day booking window return `success:false` ("Rezervuoti galima tik iki …") and return no courts, so the venue shows "Nėra duomenų šiai dienai" rather than a fetch failure.
 
+### UI components and style
+
+Every control must look like the rest of the app. Use the palette tokens in `tailwind.config.ts` (`ink`, `ball`, `court`), never raw colours, and reuse the existing components before writing new markup:
+
+- `SelectMenu` — single-choice dropdown (pill trigger, rounded panel, keyboard + screen-reader support). Use it instead of a native `<select>`, whose open list the OS draws in its own style.
+- `SegmentedControl` — a few mutually exclusive options in a row.
+- `BottomSheet` — phone sheets / dialogs.
+- Chips and pills: `h-11 rounded-full border px-3.5 text-sm`; selected/active filter = `border-ink bg-ink text-ball`, otherwise `border-court-line bg-white text-ink hover:border-ink/40`. Tap targets are at least 44px.
+
+Check new UI in a real browser at phone and desktop widths, including open, hover and focus states (`.claude/tools/browse.mjs`).
+
 ### UI filter state (index.vue)
 
 Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional municipality, changed only through its moves `chooseCounty`, `chooseMunicipality`, `locateAt`), `selectedDate`, `fromTime`, `duration`, `filterType`, `filterIndoor`, `selectedKey` (the open session). The computed `view` = `buildAvailabilityView(venues, filters, now)` applies all of them; the page only binds it. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
