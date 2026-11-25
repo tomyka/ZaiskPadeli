@@ -36,6 +36,7 @@ server/
     ntennis-fetch.ts         # nTennis guest-login + grid fetch — RUNTIME-AGNOSTIC: also bundled into cf-proxy (web APIs only, no cheerio/Nitro auto-imports)
     parse.ts                 # small pure HTML helpers: parseEuro, parseBgColor, expandHourHeader
     scraper-*.ts             # one file per venue / platform; each returns Court[]
+app/components/              # shared UI: SelectMenu, SegmentedControl, BottomSheet, VenueCard, SessionDetails, CourtFilters, CourtTags
 app/utils/
   location.ts                # the visitor's Location (county + optional municipality), its moves and filter choices
   availability.ts            # buildAvailabilityView: what the page shows for the filters (pure)
@@ -118,7 +119,7 @@ The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. A
 
 ### UI components and style
 
-Every control must look like the rest of the app. Use the palette tokens in `tailwind.config.ts` (`ink`, `ball`, `court`), never raw colours, and reuse the existing components before writing new markup:
+Every control must look like the rest of the app. Use the palette tokens in `tailwind.config.ts` (`ink`, `ball`, `court`) rather than raw colours (the one accepted exception is `text-gray-600` for secondary text, which has no token), and reuse the existing components before writing new markup:
 
 - `SelectMenu` — single-choice dropdown (pill trigger, rounded panel, keyboard + screen-reader support). Use it instead of a native `<select>`, whose open list the OS draws in its own style.
 - `SegmentedControl` — a few mutually exclusive options in a row.

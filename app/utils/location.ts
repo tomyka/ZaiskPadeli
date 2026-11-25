@@ -47,7 +47,7 @@ export function isIn(loc: Location, municipality: Municipality): boolean {
 }
 
 /** The county picker's options: everywhere, then every county; "greitai" marks counties without venues yet */
-export const COUNTY_OPTIONS: { value: County | null; label: string; hint?: string }[] = [
+export const COUNTY_OPTIONS: readonly { value: County | null; label: string; hint?: string }[] = [
   { value: null, label: 'Visa Lietuva' },
   ...COUNTIES.map(county => ({
     value: county,
