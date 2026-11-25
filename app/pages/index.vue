@@ -59,7 +59,7 @@
           <span class="sr-only">Pradžios laikas</span>
           <select v-model="fromTime" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-1 font-medium focus:outline-none">
             <option value="">Bet kada</option>
-            <option v-for="t in startTimeOptions" :key="t" :value="t">nuo {{ t }}</option>
+            <option v-for="t in view.startTimeOptions" :key="t" :value="t">nuo {{ t }}</option>
           </select>
         </label>
       </div>
@@ -73,11 +73,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
           </svg>
           <span class="sr-only">Apskritis</span>
-          <select v-model="selectedCounty" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-5 font-medium focus:outline-none">
+          <select v-model="county" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-5 font-medium focus:outline-none">
             <option :value="null">Visa Lietuva</option>
-            <option v-for="county in COUNTIES" :key="county" :value="county">
-              {{ countyLabel(county) }}{{ ACTIVE_COUNTIES.has(county) ? '' : ' (greitai)' }}
-            </option>
+            <option v-for="o in COUNTY_OPTIONS" :key="o.county" :value="o.county">{{ o.label }}</option>
           </select>
           <svg class="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
@@ -105,12 +103,12 @@
         </button>
       </div>
 
-      <div v-if="municipalityChoices.length > 1" role="group" aria-label="Savivaldybė"
+      <div v-if="choices.municipalities.length" role="group" aria-label="Savivaldybė"
         class="-mt-2 mb-4 flex flex-wrap gap-1.5 lg:-mt-3 lg:mb-5">
-        <button v-for="m in [null, ...municipalityChoices]" :key="m ?? 'all'" type="button"
-          :aria-pressed="selectedMunicipality === m" @click="selectedMunicipality = m"
+        <button v-for="m in [null, ...choices.municipalities]" :key="m ?? 'all'" type="button"
+          :aria-pressed="location.municipality === m" @click="location = chooseMunicipality(location, m)"
           :class="['h-11 rounded-full border px-3.5 text-sm transition',
-            selectedMunicipality === m ? 'border-ink bg-ink font-semibold text-ball' : 'border-court-line bg-white text-ink hover:border-ink/40']">
+            location.municipality === m ? 'border-ink bg-ink font-semibold text-ball' : 'border-court-line bg-white text-ink hover:border-ink/40']">
           {{ m ?? 'Visa apskritis' }}
         </button>
       </div>
@@ -162,7 +160,7 @@
              place so it never jumps away from the pointer). While the session panel
              takes ~22rem, step down one column so time chips keep their size -->
         <div :class="['grid items-start gap-3', panelSession ? 'min-[1700px]:grid-cols-2' : 'lg:grid-cols-2 min-[1700px]:grid-cols-3']">
-          <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id" :show-municipality="spansMunicipalities"
+          <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id" :show-municipality="view.showMunicipality"
             class="venue-card"
             :style="{ animationDelay: `${vIdx * 50}ms` }"
             :venue="v.venue" :courts="v.courts" :sessions="v.sessions" :strip="v.strip"
@@ -174,17 +172,17 @@
 
         <!-- No results at all -->
         <div v-if="view.venues.length === 0" class="py-16 text-center">
-          <template v-if="selectedCounty && !ACTIVE_COUNTIES.has(selectedCounty)">
+          <template v-if="choices.noVenuesText">
             <!-- No data for this county at all: filters can't help, offer the whole country instead -->
-            <p class="font-medium text-gray-600">{{ countyGenitive(selectedCounty) }} kortų duomenų kol kas neturime.</p>
-            <button type="button" @click="selectedCounty = null"
+            <p class="font-medium text-gray-600">{{ choices.noVenuesText }}</p>
+            <button type="button" @click="location = EVERYWHERE"
               class="mt-4 min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
               Rodyti visą Lietuvą
             </button>
           </template>
           <p v-else class="font-medium text-gray-600">Nėra laisvų {{ duration }} min laikų pagal pasirinktus filtrus</p>
-          <div v-if="!selectedCounty || ACTIVE_COUNTIES.has(selectedCounty)" class="mt-4 flex flex-wrap justify-center gap-2">
-            <button v-if="selectedMunicipality" type="button" @click="selectedMunicipality = null"
+          <div v-if="!choices.noVenuesText" class="mt-4 flex flex-wrap justify-center gap-2">
+            <button v-if="location.municipality" type="button" @click="location = chooseMunicipality(location, null)"
               class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
               Rodyti visą apskritį
             </button>
@@ -256,15 +254,14 @@
 
 <script setup lang="ts">
 import type { AvailabilityResponse } from '~~/server/utils/types'
-import { COUNTIES, countyGenitive, countyLabel, nearestCounty } from '~~/server/utils/regions'
-import { ACTIVE_COUNTIES, activeMunicipalitiesIn } from '~~/server/utils/venues'
-import { MAX_DAYS_AHEAD, addDays, byDayTime, currentMinutesFor, dayOfWeek, isValidIsoDate, todayLT } from '~~/server/utils/time'
+import { COUNTY_OPTIONS, EVERYWHERE, chooseCounty, chooseMunicipality, locateAt, locationChoices } from '~/utils/location'
+import { MAX_DAYS_AHEAD, addDays, currentMinutesFor, dayOfWeek, isValidIsoDate, todayLT } from '~~/server/utils/time'
 import { buildAvailabilityView, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
 import { formatClock, ltPlural } from '~/utils/format'
 
 // Remembered across visits (cookie): county, municipality, duration, court type, indoor
-const { county: selectedCounty, municipality: selectedMunicipality, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
+const { location, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
 
 // Re-read every minute so today's past starts drop off and the date pills roll over at midnight
 const nowTick = ref(Date.now())
@@ -311,10 +308,14 @@ const selectedDayLabel = computed(() =>
 )
 
 watch(selectedDate, () => { expanded.value = new Set(); selectedKey.value = null })
-watch([selectedCounty, selectedMunicipality], () => { expanded.value = new Set() })
+watch(() => [location.value.county, location.value.municipality], () => { expanded.value = new Set() })
 
-/** Municipalities with venues in the chosen county; chips appear only when there is a choice */
-const municipalityChoices = computed(() => selectedCounty.value ? activeMunicipalitiesIn(selectedCounty.value) : [])
+/** The county select's model; picking a county goes through the location module */
+const county = computed({
+  get: () => location.value.county,
+  set: (c) => { location.value = chooseCounty(location.value, c) },
+})
+const choices = computed(() => locationChoices(location.value))
 
 const { data, pending, error, refresh: rawRefresh } = useFetch<AvailabilityResponse>('/api/availability', {
   query: { date: selectedDate },
@@ -329,8 +330,7 @@ async function refresh() {
 const view = computed(() => buildAvailabilityView(
   data.value?.venues ?? [],
   {
-    county: selectedCounty.value,
-    municipality: selectedMunicipality.value,
+    location: location.value,
     duration: duration.value,
     type: filterType.value,
     indoor: filterIndoor.value,
@@ -418,21 +418,12 @@ function resetDateInput(e: FocusEvent) {
   (e.target as HTMLInputElement).value = selectedDate.value
 }
 
-/** The chosen start time stays listed even on a day that doesn't offer it, so the control never goes blank */
-const startTimeOptions = computed(() => {
-  const opts = view.value.startTimeOptions
-  return fromTime.value && !opts.includes(fromTime.value) ? [...opts, fromTime.value].sort(byDayTime) : opts
-})
-
-/** Cards name their municipality when the listed venues are not all in one */
-const spansMunicipalities = computed(() => new Set(view.value.venues.map(v => v.venue.municipality)).size > 1)
-
 function detectCounty() {
   if (!navigator.geolocation) { gpsState.value = 'error'; return }
   gpsState.value = 'loading'
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      selectedCounty.value = nearestCounty(pos.coords.latitude, pos.coords.longitude)
+      location.value = locateAt(location.value, pos.coords.latitude, pos.coords.longitude)
       gpsState.value = 'done'
     },
     () => { gpsState.value = 'error' },

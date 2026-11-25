@@ -1,6 +1,7 @@
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
 import { COUNTIES, MUNICIPALITIES, countyOf, type County, type Municipality } from '../../server/utils/regions'
 import type { CourtKind } from '../../server/utils/types'
+import { toLocation } from './location'
 
 /**
  * The visitor's remembered choices. Stored in a cookie the visitor controls,
@@ -27,11 +28,9 @@ export const DEFAULT_PREFS: Readonly<Prefs> = { county: 'Kauno', municipality: n
 /** Any stored value → valid Prefs; each unexpected field falls back to its default. */
 export function parsePrefs(raw: unknown): Prefs {
   const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
-  const county = parseCounty(p)
   const m = p.municipality as Municipality
   return {
-    county,
-    municipality: county && MUNICIPALITIES.includes(m) && countyOf(m) === county ? m : null,
+    ...toLocation(parseCounty(p), MUNICIPALITIES.includes(m) ? m : null),
     duration: DURATIONS.includes(p.duration as Duration) ? (p.duration as Duration) : DEFAULT_PREFS.duration,
     type: p.type === 'doubles' || p.type === 'singles' ? p.type : null,
     indoor: typeof p.indoor === 'boolean' ? p.indoor : null,

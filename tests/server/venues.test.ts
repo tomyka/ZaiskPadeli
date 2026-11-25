@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Court } from '../../server/utils/types'
 import { MUNICIPALITIES } from '../../server/utils/regions'
-import { ACTIVE_COUNTIES, ACTIVE_MUNICIPALITIES, VENUES, activeMunicipalitiesIn, venueInfo, type VenueInfo } from '../../server/utils/venues'
+import { ACTIVE_COUNTIES, ACTIVE_MUNICIPALITIES, VENUES, venueInfo, type VenueInfo } from '../../server/utils/venues'
 import { runScraper, SCRAPERS } from '../../server/utils/scraper-all'
 
 describe('venue registry', () => {
@@ -31,12 +31,6 @@ describe('venue registry', () => {
   it('places Prienai-area venues in Prienų r., not Kaunas', () => {
     expect(venueInfo('prienuose')?.municipality).toBe('Prienų r.')
     expect(venueInfo('harmonypark')?.municipality).toBe('Prienų r.')
-  })
-
-  it('lists a county\'s municipalities city first', () => {
-    expect(activeMunicipalitiesIn('Kauno')).toEqual(['Kaunas', 'Prienų r.'])
-    expect(activeMunicipalitiesIn('Panevėžio')).toEqual(['Panevėžys', 'Panevėžio r.'])
-    expect(activeMunicipalitiesIn('Vilniaus')).toEqual(['Vilnius'])
   })
 
   it('looks venues up by id', () => {

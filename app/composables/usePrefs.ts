@@ -1,4 +1,5 @@
 import { DEFAULT_PREFS, parsePrefs, type Prefs } from '~/utils/prefs'
+import type { Location } from '~/utils/location'
 
 /**
  * Remembered preferences as writable refs, backed by a cookie so the server
@@ -20,12 +21,11 @@ export function usePrefs() {
   }
 
   return {
-    /** Changing the county also clears the municipality, which belonged to the old one */
-    county: computed<Prefs['county']>({
-      get: () => prefs.value.county,
-      set: (v) => { cookie.value = { ...prefs.value, county: v, municipality: null } },
+    /** Set it only to Locations from the location module (its moves keep the county/municipality invariant) */
+    location: computed<Location>({
+      get: () => ({ county: prefs.value.county, municipality: prefs.value.municipality }),
+      set: (loc) => { cookie.value = { ...prefs.value, county: loc.county, municipality: loc.municipality } },
     }),
-    municipality: field('municipality'),
     duration: field('duration'),
     type: field('type'),
     indoor: field('indoor'),

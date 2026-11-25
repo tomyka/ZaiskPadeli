@@ -40,16 +40,6 @@ export function countyOf(m: Municipality): County {
   return MUNICIPALITY_COUNTY[m]
 }
 
-/** "Kauno apskr." — compact label for the filter */
-export function countyLabel(c: County): string {
-  return `${c} apskr.`
-}
-
-/** "Kauno apskrities" — genitive, for sentences such as "… kortų duomenų kol kas neturime" */
-export function countyGenitive(c: County): string {
-  return `${c} apskrities`
-}
-
 interface LatLng { lat: number; lng: number }
 
 /** County seats */
@@ -88,16 +78,4 @@ export function nearestCounty(lat: number, lng: number): County {
     if (dist < minDist) { minDist = dist; nearest = county }
   }
   return nearest
-}
-
-/** Where a venue list is narrowed to: a county, optionally one municipality in it. null county = everywhere. */
-export interface RegionFilter {
-  county: County | null
-  /** Only meaningful with a county, and must lie in it */
-  municipality: Municipality | null
-}
-
-export function inRegion(m: Municipality, f: RegionFilter): boolean {
-  if (f.municipality) return m === f.municipality
-  return !f.county || countyOf(m) === f.county
 }

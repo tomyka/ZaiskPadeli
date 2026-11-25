@@ -1,4 +1,4 @@
-import { MUNICIPALITIES, countyOf, type County, type Municipality } from './regions'
+import { countyOf, type County, type Municipality } from './regions'
 
 /**
  * Single source of truth for every venue shown in the app.
@@ -184,8 +184,3 @@ export const ACTIVE_MUNICIPALITIES: ReadonlySet<Municipality> = new Set(VENUES.m
 
 /** Counties that have at least one venue — the rest are shown as "coming soon" */
 export const ACTIVE_COUNTIES: ReadonlySet<County> = new Set(VENUES.map(v => countyOf(v.municipality)))
-
-/** A county's municipalities that have venues (city first): the choices for narrowing that county */
-export function activeMunicipalitiesIn(county: County): Municipality[] {
-  return MUNICIPALITIES.filter(m => countyOf(m) === county && ACTIVE_MUNICIPALITIES.has(m))
-}

@@ -27,7 +27,7 @@ server/
     rate-limit.ts            # 20 req/IP/min for /api/*
   utils/
     types.ts                 # shared TypeScript interfaces (Court, Venue, TimeSlot, ScrapeReport, etc.)
-    regions.ts               # counties + municipalities (pure data); venues record a municipality, the county is derived
+    regions.ts               # counties + municipalities (pure data); venues record a municipality, the county is derived; the visitor's selection (and its invariant) lives in app/utils/location.ts
     cache.ts                 # Vercel KV cache (in-memory fallback for local dev)
     time.ts                  # Lithuanian timezone utilities — always use these
     venues.ts                # VENUE REGISTRY — single source of venue metadata (pure data, also imported by the client)
@@ -113,7 +113,7 @@ The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. A
 
 ### UI filter state (index.vue)
 
-Refs: `selectedCounty`, `selectedMunicipality`, `selectedDate`, `filterStart`, `filterEnd`, `filterType`, `filterIndoor`, `activeVenue`. The computed `filteredCourts(venue)` applies all active filters. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
+Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional municipality, changed only through its moves `chooseCounty`, `chooseMunicipality`, `locateAt`), `selectedDate`, `filterStart`, `filterEnd`, `filterType`, `filterIndoor`, `activeVenue`. The computed `filteredCourts(venue)` applies all active filters. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
 
 ### Deployment
 

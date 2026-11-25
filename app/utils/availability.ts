@@ -1,6 +1,6 @@
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
 import type { Court, CourtKind, Venue } from '../../server/utils/types'
-import { inRegion, type RegionFilter } from '../../server/utils/regions'
+import { isIn, type Location } from './location'
 import { byDayTime, dayMinutes, hasSlotStarted } from '../../server/utils/time'
 import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueSessions } from './sessions'
 import { venueProblem } from './venue-status'
@@ -16,7 +16,8 @@ export function courtKind(court: Court): CourtKind {
   return court.type === 'singles' ? 'singles' : 'doubles'
 }
 
-export interface ViewFilters extends RegionFilter {
+export interface ViewFilters {
+  location: Location
   duration: number
   type: CourtKind | null
   indoor: boolean | null
@@ -43,16 +44,19 @@ export interface AvailabilityView {
   /** Venues with at least one session, plus venues that failed to load (shown with their error) */
   venues: VenueView[]
   bookableCount: number
-  /** Choices for the "nuo" picker: every not-yet-started slot time on matching courts in the selected region */
+  /** Choices for the "nuo" picker: every not-yet-started slot time on matching courts in the location,
+   *  plus the chosen time even when this day doesn't offer it (so the picker never goes blank) */
   startTimeOptions: string[]
+  /** Listed venues span several municipalities, so cards should name theirs */
+  showMunicipality: boolean
 }
 
 /** `currentMinutes` comes from `currentMinutesFor(date)`: -1 when the date isn't today. */
 export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMinutes: number): AvailabilityView {
-  const inRegionVenues = venues.filter(v => inRegion(v.municipality, f))
+  const inLocation = venues.filter(v => isIn(f.location, v.municipality))
   const earliest = Math.max(currentMinutes, f.fromTime ? dayMinutes(f.fromTime) : 0)
 
-  const all: VenueView[] = inRegionVenues.map(venue => {
+  const all: VenueView[] = inLocation.map(venue => {
     const courts = venue.courts.filter(c => courtMatches(c, f))
     return {
       venue,
@@ -68,11 +72,13 @@ export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMi
     for (const court of courts)
       for (const slot of court.slots)
         if (!hasSlotStarted(slot.time, currentMinutes)) times.add(slot.time)
+  if (f.fromTime) times.add(f.fromTime)
 
   return {
     venues: views,
     bookableCount: views.filter(v => v.sessions.starts.length > 0).length,
     startTimeOptions: [...times].sort(byDayTime),
+    showMunicipality: new Set(views.map(v => v.venue.municipality)).size > 1,
   }
 }
 
