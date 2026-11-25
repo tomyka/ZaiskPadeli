@@ -21,6 +21,7 @@ import { isSinglesCourtName } from './parse'
 
 const API_BASE = 'https://app.moove.lt/api/v1/settings/tickets/user'
 const DEFAULT_SKIP = ['kamuoliukų mašina', 'ball machine']
+const PAGE_SIZE = 1000
 
 export interface MooveTicket {
   id: number
@@ -78,13 +79,17 @@ export function parseMooveTickets(
 /** Build a scraper for one Moove location */
 export function mooveScraper(config: MooveConfig) {
   return async (date: string, venue: { id: string }): Promise<Court[]> => {
-    const url = `${API_BASE}?locationIds=${config.locationId}&sport=padel&dateFrom=${date}&dateTo=${date}&size=300`
+    // One page must hold the whole day: ~30 half hours × courts (10-court clubs need 330+)
+    const url = `${API_BASE}?locationIds=${config.locationId}&sport=padel&dateFrom=${date}&dateTo=${date}&size=${PAGE_SIZE}`
     const resp = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
       signal: AbortSignal.timeout(15_000),
     })
     if (!resp.ok) throw new Error(`API returned ${resp.status}`)
-    const data = (await resp.json()) as { content?: MooveTicket[] }
+    const data = (await resp.json()) as { content?: MooveTicket[]; totalElements?: number }
+    if ((data.totalElements ?? 0) > (data.content?.length ?? 0)) {
+      throw new Error(`Day truncated: ${data.content?.length} of ${data.totalElements} tickets`)
+    }
     return parseMooveTickets(data.content ?? [], venue.id, currentMinutesFor(date), config)
   }
 }

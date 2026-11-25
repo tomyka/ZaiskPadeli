@@ -25,6 +25,7 @@ export type County = typeof COUNTIES[number]
  */
 export const MUNICIPALITY_COUNTY = {
   'Vilnius': 'Vilniaus',
+  'Ukmergės r.': 'Vilniaus',
   'Kaunas': 'Kauno',
   'Prienų r.': 'Kauno',
   'Klaipėda': 'Klaipėdos',

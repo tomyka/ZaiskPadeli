@@ -53,7 +53,8 @@ describe('locationChoices', () => {
   it('offers municipalities city first, only when a county has venues in several', () => {
     expect(locationChoices(toLocation('Kauno', null)).municipalities).toEqual(['Kaunas', 'Prienų r.'])
     expect(locationChoices(toLocation('Panevėžio', 'Panevėžys')).municipalities).toEqual(['Panevėžys', 'Panevėžio r.'])
-    expect(locationChoices(toLocation('Vilniaus', null)).municipalities).toEqual([])
+    expect(locationChoices(toLocation('Alytaus', null)).municipalities).toEqual([]) // only Alytus
+    expect(locationChoices(toLocation('Vilniaus', null)).municipalities).toEqual(['Vilnius', 'Ukmergės r.'])
     expect(locationChoices(EVERYWHERE).municipalities).toEqual([])
   })
 

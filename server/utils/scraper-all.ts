@@ -50,6 +50,15 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   '4padel': playballScraper({ slug: '4padel-arena' }),
   padelspot: playballScraper({ slug: 'padel-spot-arena' }),
   oshee: playballScraper({ slug: 'oshee-teniso-ir-padelio-arena' }),
+  mostai: mooveScraper({ locationId: 224, indoor: true }),
+  fanumetalo: mooveScraper({ locationId: 2, indoor: true }),
+  fanuplunges: mooveScraper({ locationId: 88, indoor: true }),
+  palahouse: ntennisScraper({ baseUrl: 'https://savitarna.padeltennis.lt', placeId: 9 }),
+  playdate: ntennisScraper({ baseUrl: 'https://savitarna.padeltennis.lt', placeId: 1 }),
+  bsportvilnius: ntennisScraper({ baseUrl: 'https://savitarna.baltictennis.lt', placeId: 2 }),
+  rato: ntennisScraper({ baseUrl: 'https://savitarna.ratopadelioarena.lt', placeId: 1 }),
+  skypadel: mooveScraper({ locationId: 145, indoor: false }),
+  upadel: mooveScraper({ locationId: 297, indoor: true }),
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.
