@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { parseNTennisGrid } from '../../server/utils/ntennis'
+import { padelHubSlotTime, parsePadelHubCourts } from '../../server/utils/scraper-padelhub'
 import { parsePadelHouseHtml } from '../../server/utils/scraper-padelhouse'
 import { getPriceForSlot, parseOpeningHours, type WineroCourt } from '../../server/utils/scraper-winero'
 
@@ -43,6 +44,34 @@ describe('parseNTennisGrid', () => {
 
   it('returns no courts for a login page', () => {
     expect(parseNTennisGrid('<form id="LoginForm"></form>', { idPrefix: 'x', currentMinutes: -1 })).toEqual([])
+  })
+})
+
+describe('Padel Hub', () => {
+  it('maps the 1-based half-hour timeIdentifier like the booking site does', () => {
+    expect(padelHubSlotTime(1)).toBe('00:00')
+    expect(padelHubSlotTime(14)).toBe('06:30')
+    expect(padelHubSlotTime(15)).toBe('07:00')
+    expect(padelHubSlotTime(45)).toBe('22:00')
+  })
+
+  it('keeps padel courts only and maps slots', () => {
+    const courts = parsePadelHubCourts([
+      {
+        id: 1, tab: 'Padelis', name: 'Padelio dvejetų kortas \n1 „Ąžuolo klinika“',
+        times: [{ timeIdentifier: 15, isReserved: false, price: 10 }, { timeIdentifier: 16, isReserved: true, price: 12 }],
+      },
+      { id: 5, tab: 'skvosas', name: '1 skvošo kortas', times: [{ timeIdentifier: 15, isReserved: false, price: 9 }] },
+    ], 'padelhub')
+    expect(courts).toEqual([{
+      id: 'padelhub-1',
+      name: '#1 Ąžuolo klinika',
+      type: 'doubles',
+      slots: [
+        { time: '07:00', available: true, price: 10 },
+        { time: '07:30', available: false, price: 12 },
+      ],
+    }])
   })
 })
 
