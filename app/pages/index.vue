@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-3xl px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:flex lg:max-w-7xl lg:items-start lg:gap-6 lg:px-8">
+  <div class="mx-auto max-w-3xl px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:flex lg:max-w-[100rem] lg:items-start lg:gap-6 lg:px-8">
 
     <!-- ═══ CONTROLS: stacked rows on phones, a sticky sidebar on desktop ═══ -->
     <aside aria-label="Paieška"
@@ -148,8 +148,9 @@
           </button>
         </div>
 
-        <!-- Cards: one column on phones; two on desktop (only on very wide screens while the session panel takes room) -->
-        <div :class="['grid items-start gap-3', panelSession ? '2xl:grid-cols-2' : 'lg:grid-cols-2']">
+        <!-- Cards: one column on phones; two on desktop, three on very wide screens. While the session panel
+             takes ~22rem, step down one column so time chips keep their size -->
+        <div :class="['grid items-start gap-3', panelSession ? 'min-[1700px]:grid-cols-2' : 'lg:grid-cols-2 min-[1700px]:grid-cols-3']">
           <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id"
             :class="['venue-card', expanded.has(v.venue.id) ? 'lg:col-span-full' : '']"
             :style="{ animationDelay: `${vIdx * 50}ms` }"
