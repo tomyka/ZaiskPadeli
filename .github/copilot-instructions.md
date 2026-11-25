@@ -11,7 +11,7 @@ npm run preview    # preview production build locally
 npx vercel --prod --yes  # deploy to production
 ```
 
-Quality gates: `npm run typecheck` (nuxi/vue-tsc), `npm test` (Vitest, `tests/**/*.test.ts`, HTML fixtures in `tests/fixtures/`), `npm run check` runs both. CI (`.github/workflows/ci.yml`) runs typecheck, tests and build on every push/PR. Keep parsing logic in pure exported functions so it can be fixture-tested.
+Quality gates: `npm run typecheck` (nuxi/vue-tsc), `npm test` (Vitest, `tests/**/*.test.ts`, HTML fixtures in `tests/fixtures/`), `npm run check` runs both. CI (`.github/workflows/ci.yml`) runs typecheck, tests, build, and the cf-proxy Worker typecheck + bundle dry-run on every push/PR. Keep parsing logic in pure exported functions so it can be fixture-tested.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ server/
     venues.ts                # VENUE REGISTRY — single source of venue metadata (pure data, also imported by the client)
     scraper-all.ts           # binds each venue id to a scraper (SCRAPERS) + runner (Venue shell, deadline, error handling)
     ntennis.ts               # pure parser shared by all nTennis/nSoft grid venues (a1padel, kaunopadelis, tennisspace, vilniuspadel)
-    ntennis-fetch.ts         # nTennis guest-login + grid fetch
+    ntennis-fetch.ts         # nTennis guest-login + grid fetch — RUNTIME-AGNOSTIC: also bundled into cf-proxy (web APIs only, no cheerio/Nitro auto-imports)
     parse.ts                 # small pure HTML helpers: parseEuro, parseBgColor, expandHourHeader
     scraper-*.ts             # one file per venue / platform; each returns Court[]
 ```
