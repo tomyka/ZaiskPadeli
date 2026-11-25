@@ -82,7 +82,9 @@
 <script setup lang="ts">
 import type { Court, Venue } from '~~/server/utils/types'
 import { venueInfo } from '~~/server/utils/venues'
-import { SLOT_MIN, formatPrice, ltPlural, sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
+import { SLOT_MIN } from '~~/server/utils/time'
+import { formatPrice, ltPlural } from '~/utils/format'
+import { sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
 
 const props = defineProps<{
   venue: Venue

@@ -9,6 +9,7 @@ export interface Court {
   name: string        // "Kortas 1", "01 Neodenta"
   type: 'doubles' | 'singles' | 'unknown'
   indoor?: boolean    // true = indoor, false = outdoor, undefined = unknown
+  /** In venue-day order (after-midnight slots last); runScraper guarantees it */
   slots: TimeSlot[]
 }
 

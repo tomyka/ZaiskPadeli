@@ -5,14 +5,15 @@
 
 <script setup lang="ts">
 import type { Court } from '~~/server/utils/types'
+import { courtKind, type CourtKind } from '~/utils/availability'
 
-/** Court type badge plus indoor/outdoor label; an unknown type shows as doubles, the common case */
+/** Court type badge plus indoor/outdoor label */
 const props = defineProps<{ court: Court }>()
 
-const TYPE = {
+const TYPE: Record<CourtKind, { label: string; class: string }> = {
   doubles: { label: '2v2', class: 'bg-blue-50 text-blue-700' },
   singles: { label: '1v1', class: 'bg-purple-50 text-purple-700' },
-} as const
+}
 
-const kind = computed(() => (props.court.type === 'singles' ? 'singles' : 'doubles'))
+const kind = computed(() => courtKind(props.court))
 </script>

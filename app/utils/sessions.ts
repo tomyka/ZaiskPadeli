@@ -1,20 +1,14 @@
-import type { Court } from '../../server/utils/types'
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
-import { fromMinutes, toMinutes } from '../../server/utils/time'
+import type { Court } from '../../server/utils/types'
+import { SLOT_MIN, dayMinutes, fromMinutes, hasSlotStarted, toMinutes } from '../../server/utils/time'
 
 /**
  * Bookable sessions: a start time where a court has enough back-to-back free
  * 30-min slots for the chosen duration. This is what the page offers instead
  * of raw slots, since padel is booked as 60/90/120-minute sessions.
+ *
+ * Relies on court slots being in venue-day order (guaranteed by runScraper).
  */
-
-export const DURATIONS = [60, 90, 120] as const
-export type Duration = typeof DURATIONS[number]
-export const DEFAULT_DURATION: Duration = 90
-
-export function isDuration(v: unknown): v is Duration {
-  return DURATIONS.includes(v as Duration)
-}
 
 export interface CourtStart {
   time: string
@@ -43,25 +37,6 @@ export interface VenueSessions {
 
 export type StripCell = { time: string; state: 'free' | 'busy' | 'past' }
 
-/** Every venue's grid is in 30-minute slots */
-export const SLOT_MIN = 30
-/** No venue opens this early, so earlier clock times are past midnight, at the end of the venue's day */
-const DAY_START_MIN = 4 * 60
-
-/**
- * Minutes into the venue's day: like `toMinutes`, but "00:30" after a late
- * evening is 1470, not 30, so after-midnight slots sort and join correctly.
- */
-export function dayMinutes(time: string): number {
-  const m = toMinutes(time)
-  return m < DAY_START_MIN ? m + 1440 : m
-}
-
-/** Sorts clock times in venue-day order (evening before after-midnight). */
-export function byDayTime(a: string, b: string): number {
-  return dayMinutes(a) - dayMinutes(b)
-}
-
 function minPriceOf(prices: (number | null)[]): number | null {
   const priced = prices.filter((p): p is number => p !== null)
   return priced.length ? Math.min(...priced) : null
@@ -74,8 +49,7 @@ function minPriceOf(prices: (number | null)[]): number | null {
  */
 export function courtSessionStarts(court: Court, durationMin: number, earliestMin = 0): CourtStart[] {
   const need = Math.max(1, Math.ceil(durationMin / SLOT_MIN))
-  // Scrapers don't all order after-midnight slots last, so put them in venue-day order first
-  const slots = [...court.slots].sort((a, b) => byDayTime(a.time, b.time))
+  const { slots } = court
   const out: CourtStart[] = []
   for (let i = 0; i + need <= slots.length; i++) {
     const start = dayMinutes(slots[i]!.time)
@@ -103,45 +77,31 @@ export function venueSessions(courts: Court[], durationMin: number, earliestMin 
       byTime.set(time, list)
     }
   }
+  // Map keeps insertion order, which is per court; re-merge into venue-day order
   const starts = [...byTime]
-    .sort(([a], [b]) => byDayTime(a, b))
+    .sort(([a], [b]) => dayMinutes(a) - dayMinutes(b))
     .map(([time, list]) => ({ time, courts: list, minPrice: minPriceOf(list.map(c => c.price)) }))
   return { perCourt, starts, minPrice: minPriceOf(starts.map(s => s.minPrice)) }
 }
 
 /**
  * One cell per 30-min slot across the venue's day: free if any court has it
- * free, past if it starts before `nowMin` (venue-day minutes; -1 for a day that isn't today).
+ * free, past if it has started (`currentMinutes` from `currentMinutesFor`).
  */
-export function dayStrip(courts: Court[], nowMin: number): StripCell[] {
+export function dayStrip(courts: Court[], currentMinutes: number): StripCell[] {
   const free = new Map<string, boolean>()
   for (const court of courts)
     for (const s of court.slots)
       free.set(s.time, (free.get(s.time) ?? false) || s.available)
   return [...free]
-    .sort(([a], [b]) => byDayTime(a, b))
+    .sort(([a], [b]) => dayMinutes(a) - dayMinutes(b))
     .map(([time, isFree]) => ({
       time,
-      state: nowMin >= 0 && dayMinutes(time) < nowMin ? 'past' : isFree ? 'free' : 'busy',
+      state: hasSlotStarted(time, currentMinutes) ? 'past' : isFree ? 'free' : 'busy',
     }))
 }
 
 /** "18:00" + 90 → "19:30" */
 export function sessionEnd(time: string, durationMin: number): string {
   return fromMinutes((toMinutes(time) + durationMin) % 1440)
-}
-
-/** €42, €40.50 */
-export function formatPrice(p: number): string {
-  return `€${Number.isInteger(p) ? p : p.toFixed(2)}`
-}
-
-/** Lithuanian noun form for a count: 1 kortas, 2 kortai, 10 kortų, 21 kortas. */
-export function ltPlural(n: number, one: string, few: string, many: string): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod100 >= 11 && mod100 <= 19) return many
-  if (mod10 === 1) return one
-  if (mod10 >= 2) return few
-  return many
 }

@@ -1,19 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { Court, TimeSlot } from '../../server/utils/types'
-import {
-  byDayTime, courtSessionStarts, dayStrip, formatPrice, isDuration, ltPlural, sessionEnd, venueSessions,
-} from '../../app/utils/sessions'
-
-/** Builds a court from a pattern: one char per 30-min slot from `first`; '1' free, '0' booked. */
-function court(id: string, pattern: string, first = '18:00', price: number | null = 10): Court {
-  const [h, m] = first.split(':').map(Number) as [number, number]
-  const slots: TimeSlot[] = pattern.split('').map((c, i) => {
-    const min = (h * 60 + m + i * 30) % 1440
-    const time = `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
-    return { time, available: c === '1', price }
-  })
-  return { id, name: id, type: 'doubles', slots }
-}
+import type { Court } from '../../server/utils/types'
+import { courtSessionStarts, dayStrip, sessionEnd, venueSessions } from '../../app/utils/sessions'
+import { court } from './fixtures'
 
 describe('courtSessionStarts', () => {
   it('offers starts only where enough consecutive slots are free', () => {
@@ -43,24 +31,18 @@ describe('courtSessionStarts', () => {
   })
 
   it('does not join slots that are adjacent in the array but not in time', () => {
-    const c = court('a', '11')
+    const c: Court = court('a', '11')
     c.slots[1]!.time = '19:30'
     expect(courtSessionStarts(c, 60)).toEqual([])
   })
 })
 
 describe('after-midnight slots', () => {
-  // 23:00 23:30 00:00 00:30 — a venue open past midnight
+  // 23:00 23:30 00:00 00:30, in venue-day order as runScraper delivers them
   const late = court('late', '1111', '23:00')
 
   it('joins sessions across midnight', () => {
     expect(courtSessionStarts(late, 90).map(s => s.time)).toEqual(['23:00', '23:30'])
-  })
-
-  it('handles slots a scraper sorted as plain strings (00:00 first)', () => {
-    const unsorted = { ...late, slots: [...late.slots].sort((a, b) => a.time.localeCompare(b.time)) }
-    expect(unsorted.slots[0]!.time).toBe('00:00')
-    expect(courtSessionStarts(unsorted, 90).map(s => s.time)).toEqual(['23:00', '23:30'])
   })
 
   it('treats after-midnight starts as later than the evening, not earlier', () => {
@@ -70,7 +52,6 @@ describe('after-midnight slots', () => {
 
   it('orders the day strip evening-first', () => {
     expect(dayStrip([late], -1).map(c => c.time)).toEqual(['23:00', '23:30', '00:00', '00:30'])
-    expect([...['00:30', '06:00', '23:30']].sort(byDayTime)).toEqual(['06:00', '23:30', '00:30'])
   })
 })
 
@@ -94,7 +75,7 @@ describe('venueSessions', () => {
 })
 
 describe('dayStrip', () => {
-  it('marks a slot free when any court has it free, and past slots as past', () => {
+  it('marks a slot free when any court has it free, and started slots as past', () => {
     const a = court('a', '100', '18:00')
     const b = court('b', '001', '18:00')
     expect(dayStrip([a, b], -1).map(c => c.state)).toEqual(['free', 'busy', 'free'])
@@ -102,27 +83,9 @@ describe('dayStrip', () => {
   })
 })
 
-describe('helpers', () => {
-  it('sessionEnd wraps past midnight', () => {
+describe('sessionEnd', () => {
+  it('wraps past midnight', () => {
     expect(sessionEnd('18:00', 90)).toBe('19:30')
     expect(sessionEnd('23:00', 60)).toBe('00:00')
-  })
-
-  it('formatPrice keeps whole euros short', () => {
-    expect(formatPrice(42)).toBe('€42')
-    expect(formatPrice(40.5)).toBe('€40.50')
-  })
-
-  it('isDuration accepts only offered durations', () => {
-    expect(isDuration(90)).toBe(true)
-    expect(isDuration(45)).toBe(false)
-    expect(isDuration('90')).toBe(false)
-  })
-
-  it('ltPlural picks Lithuanian noun forms', () => {
-    const f = (n: number) => ltPlural(n, 'kortas', 'kortai', 'kortų')
-    expect([1, 2, 9, 10, 11, 15, 20, 21, 22, 111].map(f)).toEqual([
-      'kortas', 'kortai', 'kortai', 'kortų', 'kortų', 'kortų', 'kortų', 'kortas', 'kortai', 'kortų',
-    ])
   })
 })

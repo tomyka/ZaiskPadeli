@@ -53,7 +53,7 @@
         <span class="sr-only">Pradžios laikas</span>
         <select v-model="fromTime" class="min-w-0 appearance-none bg-transparent pr-1 font-medium focus:outline-none">
           <option value="">Bet kada</option>
-          <option v-for="t in allTimeSlots" :key="t" :value="t">nuo {{ t }}</option>
+          <option v-for="t in view.startTimeOptions" :key="t" :value="t">nuo {{ t }}</option>
         </select>
       </label>
     </div>
@@ -120,7 +120,7 @@
     <div v-else>
       <div class="mb-3 flex items-center justify-between gap-2">
         <p class="text-sm text-gray-600">
-          <b class="text-gray-900 tabular-nums">{{ bookableVenues.length }} {{ ltPlural(bookableVenues.length, 'vieta', 'vietos', 'vietų') }}</b>
+          <b class="text-gray-900 tabular-nums">{{ view.bookableCount }} {{ ltPlural(view.bookableCount, 'vieta', 'vietos', 'vietų') }}</b>
           turi laisvą {{ duration }} min{{ fromTime ? ` nuo ${fromTime}` : '' }}
         </p>
         <button type="button" @click="refresh()" aria-label="Atnaujinti"
@@ -133,7 +133,7 @@
       </div>
 
       <div class="space-y-3">
-        <VenueCard v-for="(v, vIdx) in venueViews" :key="v.venue.id"
+        <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id"
           class="venue-card" :style="{ animationDelay: `${vIdx * 50}ms` }"
           :venue="v.venue" :courts="v.courts" :sessions="v.sessions" :strip="v.strip"
           :duration="duration" :expanded="expanded.has(v.venue.id)"
@@ -142,7 +142,7 @@
       </div>
 
       <!-- No results at all -->
-      <div v-if="venueViews.length === 0" class="py-16 text-center">
+      <div v-if="view.venues.length === 0" class="py-16 text-center">
         <p class="font-medium text-gray-600">
           <template v-if="selectedCity && !ACTIVE_CITIES.has(selectedCity)">
             {{ selectedCity }} mieste kortų duomenys kol kas neprieinami
@@ -249,7 +249,7 @@
         </button>
         <button type="button" @click="filtersOpen = false"
           class="h-12 flex-1 rounded-xl bg-emerald-600 text-[15px] font-semibold text-white hover:bg-emerald-700">
-          Rodyti {{ bookableVenues.length }} {{ ltPlural(bookableVenues.length, 'vietą', 'vietas', 'vietų') }}
+          Rodyti {{ view.bookableCount }} {{ ltPlural(view.bookableCount, 'vietą', 'vietas', 'vietų') }}
         </button>
       </div>
     </BottomSheet>
@@ -257,90 +257,26 @@
 </template>
 
 <script setup lang="ts">
-import type { AvailabilityResponse, Venue, Court, City } from '~~/server/utils/types'
-import { CITIES, CITY_COORDS } from '~~/server/utils/types'
+import type { AvailabilityResponse } from '~~/server/utils/types'
+import { CITIES } from '~~/server/utils/types'
 import { ACTIVE_CITIES } from '~~/server/utils/venues'
-import { currentMinutesFor } from '~~/server/utils/time'
-import {
-  DEFAULT_DURATION, DURATIONS, byDayTime, dayMinutes, dayStrip, formatPrice, isDuration, ltPlural, sessionEnd, venueSessions,
-  type Duration,
-} from '~/utils/sessions'
+import { MAX_DAYS_AHEAD, addDays, currentMinutesFor, dayOfWeek, todayLT } from '~~/server/utils/time'
+import { buildAvailabilityView, nearestCity, resolveSession, type CourtKind, type SessionSheet } from '~/utils/availability'
+import { DURATIONS } from '~/utils/prefs'
+import { formatPrice, ltPlural } from '~/utils/format'
+import { sessionEnd } from '~/utils/sessions'
 
-const LT_TZ = 'Europe/Vilnius'
+// Remembered across visits (cookie): city, duration, court type, indoor
+const { city: selectedCity, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
 
-/** Returns today's date as YYYY-MM-DD in Lithuanian timezone */
-function todayLT(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: LT_TZ })
-}
-
-/**
- * Returns a YYYY-MM-DD date string N days from today in Lithuanian timezone,
- * along with day-of-week (0=Sun) and day-of-month numbers.
- */
-function ltDateOffset(offsetDays: number): { dateStr: string; dayOfWeek: number; dayOfMonth: number } {
-  const [y = 1970, m = 1, d = 1] = todayLT().split('-').map(Number)
-  const dt = new Date(Date.UTC(y, m - 1, d + offsetDays, 12))
-  return {
-    dateStr: dt.toISOString().slice(0, 10),
-    dayOfWeek: dt.getUTCDay(),
-    dayOfMonth: dt.getUTCDate(),
-  }
-}
-
-// ── Remembered preferences (cookie, so SSR renders the same choices) ──
-type CourtType = Exclude<Court['type'], 'unknown'>
-interface Prefs { city: City | null; duration: Duration; type: CourtType | null; indoor: boolean | null }
-const DEFAULT_PREFS: Prefs = { city: 'Kaunas', duration: DEFAULT_DURATION, type: null, indoor: null }
-
-const prefsCookie = useCookie<Partial<Prefs>>('zp-prefs', {
-  default: () => ({ ...DEFAULT_PREFS }),
-  maxAge: 60 * 60 * 24 * 365,
-  sameSite: 'lax',
-})
-
-/** Validated view of the cookie: anything unexpected falls back to the default */
-const prefs = computed<Prefs>(() => {
-  const p = prefsCookie.value ?? {}
-  return {
-    city: p.city === null || CITIES.includes(p.city as City) ? (p.city ?? null) : DEFAULT_PREFS.city,
-    duration: isDuration(p.duration) ? p.duration : DEFAULT_PREFS.duration,
-    type: p.type === 'doubles' || p.type === 'singles' ? p.type : null,
-    indoor: typeof p.indoor === 'boolean' ? p.indoor : null,
-  }
-})
-
-function pref<K extends keyof Prefs>(key: K) {
-  return computed<Prefs[K]>({
-    get: () => prefs.value[key],
-    set: (v) => { prefsCookie.value = { ...prefs.value, [key]: v } },
-  })
-}
-
-const selectedCity = pref('city')
-const duration = pref('duration')
-const filterType = pref('type')
-const filterIndoor = pref('indoor')
-
-const TYPE_OPTIONS: { value: CourtType | null; label: string }[] = [
+const TYPE_OPTIONS: { value: CourtKind | null; label: string }[] = [
   { value: null, label: 'Visi' }, { value: 'doubles', label: '2v2' }, { value: 'singles', label: '1v1' },
 ]
 const INDOOR_OPTIONS: { value: boolean | null; label: string }[] = [
   { value: null, label: 'Visi' }, { value: true, label: 'Vidaus' }, { value: false, label: 'Lauko' },
 ]
 
-const today = todayLT()
-/** Matches MAX_DAYS_AHEAD in server/api/availability.get.ts */
-const maxDate = ltDateOffset(180).dateStr
-const selectedDate = ref(today)
-const fromTime = ref('')
-const filtersOpen = ref(false)
-const expanded = ref(new Set<string>())
-/** The session whose sheet is open */
-const sheetKey = ref<{ venueId: string; time: string } | null>(null)
-const gpsState = ref<'idle' | 'loading' | 'done' | 'error'>('idle')
-const refreshing = ref(false)
-
-// Re-evaluated every minute so today's past start times drop off while the page stays open
+// Re-read every minute so today's past starts drop off and the date pills roll over at midnight
 const nowTick = ref(Date.now())
 let tickTimer: ReturnType<typeof setInterval> | undefined
 
@@ -354,20 +290,29 @@ onMounted(() => {
 })
 onBeforeUnmount(() => clearInterval(tickTimer))
 
+const today = computed(() => todayLT(new Date(nowTick.value)))
+const maxDate = computed(() => addDays(today.value, MAX_DAYS_AHEAD))
+const selectedDate = ref(todayLT())
+const fromTime = ref('')
+const filtersOpen = ref(false)
+const expanded = ref(new Set<string>())
+/** The session whose sheet is open */
+const sheetKey = ref<{ venueId: string; time: string } | null>(null)
+const gpsState = ref<'idle' | 'loading' | 'done' | 'error'>('idle')
+const refreshing = ref(false)
+
 // 7-day quick navigation pills
 const LT_DAYS = ['Sek', 'Pir', 'Ant', 'Tre', 'Ket', 'Pen', 'Šeš']
-const quickDays = computed(() => {
-  return Array.from({ length: 7 }, (_, i) => {
-    const { dateStr, dayOfWeek, dayOfMonth } = ltDateOffset(i)
-    const label = i === 0 ? 'Šiandien' : i === 1 ? 'Rytoj' : LT_DAYS[dayOfWeek]
-    return { date: dateStr, label, day: dayOfMonth }
+const quickDays = computed(() =>
+  Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(today.value, i)
+    const label = i === 0 ? 'Šiandien' : i === 1 ? 'Rytoj' : LT_DAYS[dayOfWeek(date)]
+    return { date, label, day: Number(date.slice(8)) }
   })
-})
+)
 
 // True when user picked a date beyond the 7-day quick nav
-const isCustomDate = computed(() =>
-  !quickDays.value.some(d => d.date === selectedDate.value)
-)
+const isCustomDate = computed(() => !quickDays.value.some(d => d.date === selectedDate.value))
 
 const selectedDayLabel = computed(() =>
   quickDays.value.find(d => d.date === selectedDate.value)?.label ?? selectedDate.value
@@ -386,50 +331,17 @@ async function refresh() {
   try { await rawRefresh() } finally { refreshing.value = false }
 }
 
-const venues = computed(() => data.value?.venues || [])
-
-// Every 30-min time across all venues that hasn't started yet, for the "nuo" picker
-const allTimeSlots = computed(() => {
-  const times = new Set<string>()
-  for (const venue of venues.value)
-    for (const court of venue.courts)
-      for (const slot of court.slots)
-        if (dayMinutes(slot.time) >= nowMinutes.value) times.add(slot.time)
-  return Array.from(times).sort(byDayTime)
-})
-
-/** Minutes since midnight now if the selected date is today, else -1 */
-const nowMinutes = computed(() => currentMinutesFor(selectedDate.value, new Date(nowTick.value)))
-
-/** Earliest allowed session start: the later of "now" and the chosen "nuo" time */
-const earliestMinutes = computed(() =>
-  Math.max(nowMinutes.value, fromTime.value ? dayMinutes(fromTime.value) : 0)
-)
-
-function matchingCourts(venue: Venue): Court[] {
-  return venue.courts.filter(court => {
-    if (filterType.value && court.type !== filterType.value) return false
-    if (filterIndoor.value !== null && court.indoor !== undefined && court.indoor !== filterIndoor.value) return false
-    return true
-  })
-}
-
-const venueViews = computed(() =>
-  venues.value
-    .filter(v => !selectedCity.value || v.city === selectedCity.value)
-    .map(venue => {
-      const courts = matchingCourts(venue)
-      return {
-        venue,
-        courts,
-        sessions: venueSessions(courts, duration.value, earliestMinutes.value),
-        strip: dayStrip(courts, nowMinutes.value),
-      }
-    })
-    .filter(v => v.sessions.starts.length > 0 || v.venue.error)
-)
-
-const bookableVenues = computed(() => venueViews.value.filter(v => v.sessions.starts.length > 0))
+const view = computed(() => buildAvailabilityView(
+  data.value?.venues ?? [],
+  {
+    city: selectedCity.value,
+    duration: duration.value,
+    type: filterType.value,
+    indoor: filterIndoor.value,
+    fromTime: fromTime.value,
+  },
+  currentMinutesFor(selectedDate.value, new Date(nowTick.value)),
+))
 
 const extraFilterCount = computed(() => (filterType.value ? 1 : 0) + (filterIndoor.value !== null ? 1 : 0))
 
@@ -446,23 +358,15 @@ function openSession(venueId: string, time: string) {
 }
 
 /** Resolved from live data, so it closes itself if a refresh removes the session */
-const sheet = computed(() => {
-  const key = sheetKey.value
-  if (!key) return null
-  const view = venueViews.value.find(v => v.venue.id === key.venueId)
-  const start = view?.sessions.starts.find(s => s.time === key.time)
-  if (!view || !start) return null
-  const others = view.sessions.starts.filter(s => s.time !== key.time).slice(0, 8)
-  return { venue: view.venue, start, others }
-})
+const sheet = computed(() => sheetKey.value && resolveSession(view.value, sheetKey.value.venueId, sheetKey.value.time))
 
 /** Last open sheet, kept after closing so the content doesn't blank out during the leave transition */
-const shownSheet = shallowRef<NonNullable<typeof sheet.value> | null>(null)
+const shownSheet = shallowRef<SessionSheet | null>(null)
 watch(sheet, (s) => { if (s) shownSheet.value = s })
 
 function clearFilters() {
   fromTime.value = ''
-  prefsCookie.value = { ...prefs.value, type: null, indoor: null }
+  clearCourtFilters()
 }
 
 function detectCity() {
@@ -470,14 +374,7 @@ function detectCity() {
   gpsState.value = 'loading'
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      const { latitude: lat, longitude: lng } = pos.coords
-      let nearest: City = 'Kaunas'
-      let minDist = Infinity
-      for (const [city, coords] of Object.entries(CITY_COORDS) as [City, {lat:number,lng:number}][]) {
-        const dist = Math.sqrt((lat - coords.lat) ** 2 + (lng - coords.lng) ** 2)
-        if (dist < minDist) { minDist = dist; nearest = city }
-      }
-      selectedCity.value = nearest
+      selectedCity.value = nearestCity(pos.coords.latitude, pos.coords.longitude)
       gpsState.value = 'done'
     },
     () => { gpsState.value = 'error' },

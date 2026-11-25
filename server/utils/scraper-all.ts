@@ -1,5 +1,6 @@
 import type { Court, Venue } from './types'
 import { VENUES, type VenueId, type VenueInfo } from './venues'
+import { byDayTime } from './time'
 import { scrapePadelHub } from './scraper-padelhub'
 import { scrapePadelHouse } from './scraper-padelhouse'
 import { scrapeTennisSpace } from './scraper-tennisspace'
@@ -75,7 +76,12 @@ export async function runScraper(
 
   try {
     const courts = await withDeadline(scrape(date, info), deadlineMs)
-    venue.courts = courts.map(c => ({ ...c, indoor: c.indoor ?? info.indoor }))
+    // Normalise here so every consumer can rely on venue-day slot order (see TimeSlot)
+    venue.courts = courts.map(c => ({
+      ...c,
+      indoor: c.indoor ?? info.indoor,
+      slots: [...c.slots].sort((a, b) => byDayTime(a.time, b.time)),
+    }))
     if (venue.courts.length === 0) venue.error = VENUE_ERROR.empty
   } catch (err) {
     console.warn(`[${info.id}] scrape failed for ${date}:`, (err as Error).message)

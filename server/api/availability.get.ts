@@ -1,10 +1,7 @@
 import { getCached, setCached, getInflight, setInflight } from '../utils/cache'
 import { scrapeAllVenues } from '../utils/scraper-all'
-import { addDays, isValidIsoDate, todayLT } from '../utils/time'
+import { MAX_DAYS_AHEAD, addDays, isValidIsoDate, todayLT } from '../utils/time'
 import type { AvailabilityResponse } from '../utils/types'
-
-/** Keep in sync with the date picker's :max in app/pages/index.vue */
-const MAX_DAYS_AHEAD = 180
 
 export default defineEventHandler(async (event): Promise<AvailabilityResponse> => {
   const query = getQuery(event)

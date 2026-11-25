@@ -42,9 +42,41 @@ export function currentMinutesFor(date: string, now: Date = new Date()): number 
   return isDateTodayLT(date, now) ? nowLTMinutes(now) : -1
 }
 
-/** True if a slot starting at `time` (lasting `durationMin`) has already ended. */
-export function isSlotOver(time: string, currentMinutes: number, durationMin = 30): boolean {
-  return currentMinutes >= 0 && toMinutes(time) + durationMin <= currentMinutes
+// ── Venue-day clock ──
+// A venue's day runs past midnight: Padel House sells 00:00–01:30 slots on the
+// same date's grid. Those belong to the END of that day, not its start.
+
+/** Every venue's grid is in 30-minute slots */
+export const SLOT_MIN = 30
+
+/** No venue opens this early, so earlier clock times are past midnight, at the end of the venue's day */
+const DAY_START_MIN = 4 * 60
+
+/**
+ * Minutes into the venue's day: like `toMinutes`, but "00:30" after a late
+ * evening is 1470, not 30, so after-midnight slots sort and compare correctly.
+ */
+export function dayMinutes(time: string): number {
+  const m = toMinutes(time)
+  return m < DAY_START_MIN ? m + 1440 : m
+}
+
+/** Sorts clock times in venue-day order (evening before after-midnight). */
+export function byDayTime(a: string, b: string): number {
+  return dayMinutes(a) - dayMinutes(b)
+}
+
+/**
+ * True if a slot starting at `time` (lasting `durationMin`) has already ended.
+ * `currentMinutes` comes from `currentMinutesFor` (-1 = not today: nothing is over).
+ */
+export function isSlotOver(time: string, currentMinutes: number, durationMin = SLOT_MIN): boolean {
+  return currentMinutes >= 0 && dayMinutes(time) + durationMin <= currentMinutes
+}
+
+/** True if a slot starting at `time` has already begun (too late to book). */
+export function hasSlotStarted(time: string, currentMinutes: number): boolean {
+  return currentMinutes >= 0 && dayMinutes(time) < currentMinutes
 }
 
 /** Strict YYYY-MM-DD check, including calendar validity (rejects 2026-02-31). */
@@ -111,6 +143,9 @@ export function fromMinutes(min: number): string {
 export function halfHourSlots(open: string, close: string): string[] {
   const slots: string[] = []
   const end = toEndMinutes(close)
-  for (let cur = toMinutes(open); cur < end; cur += 30) slots.push(fromMinutes(cur))
+  for (let cur = toMinutes(open); cur < end; cur += SLOT_MIN) slots.push(fromMinutes(cur))
   return slots
 }
+
+/** How far ahead availability can be requested; the API and the date picker share it */
+export const MAX_DAYS_AHEAD = 180
