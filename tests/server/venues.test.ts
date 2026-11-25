@@ -31,7 +31,6 @@ describe('venue registry', () => {
 
   it('places Prienai-area venues in Prienų r., not Kaunas', () => {
     expect(venueInfo('prienuose')?.municipality).toBe('Prienų r.')
-    expect(venueInfo('harmonypark')?.municipality).toBe('Prienų r.')
   })
 
   it('looks venues up by id', () => {

@@ -142,33 +142,9 @@ export const VENUES = [
     indoor: true,
     color: '#f43f5e',
   },
-  {
-    id: 'bajada',
-    name: 'BAJADA Padelio Kortai',
-    address: 'Elektronikos g. 64, Panevėžys',
-    municipality: 'Panevėžys',
-    bookingUrl: 'https://www.panevezyspadel.lt',
-    indoor: true,
-    color: '#0ea5e9',
-  },
-  {
-    id: 'aukstaitijos',
-    name: 'Aukštaitijos Padelio Klubas',
-    address: 'Parko g. 16, Panevėžys',
-    municipality: 'Panevėžys',
-    bookingUrl: 'https://www.winero.lt/arenas',
-    indoor: true,
-    color: '#a855f7',
-  },
-  {
-    id: 'harmonypark',
-    name: 'Harmony Park',
-    address: 'Vazgaikiemis, Prienų raj.',
-    municipality: 'Prienų r.',
-    bookingUrl: 'https://www.winero.lt/arena/harmony-park',
-    indoor: false,
-    color: '#84cc16',
-  },
+  // BAJADA (Panevėžys), Aukštaitijos Padelio Klubas (Panevėžys) and Harmony Park (Prienų r.)
+  // were removed (#41): Winero only lists them (reservation: false), so its availability
+  // showed every slot free, and none publishes availability anywhere else.
   // ── Šiauliai ────────────────────────────────────────────────────────────────
   {
     id: 'vilmers',

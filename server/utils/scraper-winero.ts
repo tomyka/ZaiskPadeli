@@ -74,7 +74,13 @@ async function getJson(url: string): Promise<any> {
   return res.json()
 }
 
-/** Build a scraper for one Winero arena. Court ids are prefixed with the venue id. */
+/**
+ * Build a scraper for one Winero arena. Court ids are prefixed with the venue id.
+ *
+ * Only for arenas that take bookings through Winero (`reservation: true` in
+ * GET https://www.winero.lt/api/arenas). Winero also lists venues that book elsewhere;
+ * their public availability is always empty, so every slot would show as free (#41).
+ */
 export function wineroScraper(config: WineroArenaConfig) {
   return async (date: string, venue: { id: string }): Promise<Court[]> => {
     const [arenaData, availData] = await Promise.all([

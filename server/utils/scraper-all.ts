@@ -34,9 +34,6 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   prienuose: scrapePrienuose,
   zirmunai: wineroScraper({ arenaId: 'a77b94b4-46c0-4e7b-b69d-2ed700d3e483' }),
   padelfactory: wineroScraper({ arenaId: '6526ba41-0328-4562-9da0-c8708f2e42ec', skipCourts: ['kamuoliukų mašina', 'ball machine'] }),
-  bajada: wineroScraper({ arenaId: '887c031b-06a6-4799-8355-fb2685f2b508' }),
-  aukstaitijos: wineroScraper({ arenaId: 'a582ca8a-ef5a-45ba-b50e-915d1b2b71bd' }),
-  harmonypark: wineroScraper({ arenaId: '41bb5931-4468-46e7-96ad-2c958240da9c' }),
   vilmers: wineroScraper({ arenaId: 'c389edb7-7e41-4e2e-bcb2-a6157cdcfc97' }),
   minija: wineroScraper({ arenaId: 'fdaf2d26-fee7-482d-a555-75140ba59999' }),
 }
