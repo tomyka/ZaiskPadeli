@@ -231,6 +231,33 @@ export const VENUES = [
     indoor: true,
     color: '#7c3aed',
   },
+  {
+    id: '4padel',
+    name: '4Padel Arena',
+    address: 'Tilžės g. 86, Klaipėda',
+    municipality: 'Klaipėda',
+    bookingUrl: 'https://www.playball.lt/lt/arenas/4padel-arena/book',
+    indoor: true,
+    color: '#2563eb',
+  },
+  {
+    id: 'padelspot',
+    name: 'Padel Spot',
+    address: 'Verslo g. 8, Klaipėda',
+    municipality: 'Klaipėda',
+    bookingUrl: 'https://www.playball.lt/lt/arenas/padel-spot-arena/book',
+    indoor: true,
+    color: '#db2777',
+  },
+  {
+    id: 'oshee',
+    name: 'OSHEE padelio arena',
+    address: 'Palangos pl. 13, Vydmantai, Kretingos r.',
+    municipality: 'Kretingos r.',
+    bookingUrl: 'https://playball.lt/lt/arenas/oshee-teniso-ir-padelio-arena/book',
+    indoor: true,
+    color: '#16a34a',
+  },
 ] as const satisfies readonly VenueInfo[]
 
 export type VenueId = (typeof VENUES)[number]['id']

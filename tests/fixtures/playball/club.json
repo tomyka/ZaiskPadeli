@@ -1,0 +1,49 @@
+{
+  "id": 2,
+  "name": "Padel Spot Arena",
+  "slug": "padel-spot-arena",
+  "working_hours": [
+    {
+      "day_of_week": 1,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    },
+    {
+      "day_of_week": 2,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    },
+    {
+      "day_of_week": 3,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    },
+    {
+      "day_of_week": 4,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    },
+    {
+      "day_of_week": 5,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    },
+    {
+      "day_of_week": 6,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    },
+    {
+      "day_of_week": 7,
+      "is_active": true,
+      "start_time": "08:00:00Z",
+      "end_time": "23:00:00Z"
+    }
+  ]
+}

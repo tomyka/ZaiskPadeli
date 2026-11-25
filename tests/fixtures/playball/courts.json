@@ -1,0 +1,32 @@
+{
+  "items": [
+    {
+      "id": 50,
+      "name": "Donutz Digital U1",
+      "court_type": "indoor",
+      "sport_type": "padel",
+      "is_active": true
+    },
+    {
+      "id": 58,
+      "name": "Northway U2",
+      "court_type": "indoor",
+      "sport_type": "padel",
+      "is_active": true
+    },
+    {
+      "id": 59,
+      "name": "Inv. Parkas U3",
+      "court_type": "indoor",
+      "sport_type": "padel",
+      "is_active": true
+    },
+    {
+      "id": 60,
+      "name": "Inv. Parkas U4",
+      "court_type": "indoor",
+      "sport_type": "padel",
+      "is_active": true
+    }
+  ]
+}

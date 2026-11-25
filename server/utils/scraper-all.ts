@@ -15,6 +15,7 @@ import { scrapeGoPadel } from './scraper-gopadel'
 import { scrapePadelin } from './scraper-padelin'
 import { mooveScraper } from './scraper-moove'
 import { ntennisScraper } from './scraper-ntennis'
+import { playballScraper } from './scraper-playball'
 
 /**
  * A scraper fetches one venue's courts for a date.
@@ -46,6 +47,9 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   padelionamai: ntennisScraper({ baseUrl: 'https://savitarna.padelionamai.lt', placeId: 2 }),
   drevernos: mooveScraper({ locationId: 288, indoor: true }),
   startpadel: mooveScraper({ locationId: 158, indoor: true }),
+  '4padel': playballScraper({ slug: '4padel-arena' }),
+  padelspot: playballScraper({ slug: 'padel-spot-arena' }),
+  oshee: playballScraper({ slug: 'oshee-teniso-ir-padelio-arena' }),
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.

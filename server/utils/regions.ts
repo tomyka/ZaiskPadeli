@@ -30,6 +30,7 @@ export const MUNICIPALITY_COUNTY = {
   'Klaipėda': 'Klaipėdos',
   'Klaipėdos r.': 'Klaipėdos',
   'Palanga': 'Klaipėdos',
+  'Kretingos r.': 'Klaipėdos',
   'Šiauliai': 'Šiaulių',
   'Plungės r.': 'Telšių',
   'Alytus': 'Alytaus',
