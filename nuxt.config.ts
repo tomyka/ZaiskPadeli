@@ -54,7 +54,7 @@ export default defineNuxtConfig({
   },
 
   tailwindcss: {
-    cssPath: '~/app/assets/css/tailwind.css',
+    cssPath: '~/assets/css/tailwind.css', // ~ is app/ in Nuxt 4
   },
 
   nitro: {

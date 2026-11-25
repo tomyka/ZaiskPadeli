@@ -19,7 +19,7 @@
                 : 'border border-court-line bg-white text-ink hover:border-ink/40'
             ]">
             <span class="text-[11px] font-medium"
-              :class="selectedDate === day.date ? 'text-ink-muted' : 'text-gray-500'">{{ day.label }}</span>
+              :class="selectedDate === day.date ? 'text-ink-muted' : 'text-gray-600'">{{ day.label }}</span>
             <span class="font-display text-[22px] font-bold leading-none tabular-nums">{{ day.day }}</span>
           </button>
         </div>
@@ -68,7 +68,7 @@
       <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Miestas</p>
       <div class="mb-4 flex items-center gap-1.5 lg:mb-5">
         <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-court-line bg-white pl-3 pr-2 text-sm text-gray-800 lg:flex-1">
-          <svg class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+          <svg class="h-4 w-4 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
           </svg>
@@ -79,7 +79,7 @@
               {{ city }}{{ ACTIVE_CITIES.has(city) ? '' : ' (greitai)' }}
             </option>
           </select>
-          <svg class="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+          <svg class="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
           </svg>
         </label>
@@ -122,7 +122,7 @@
           <div class="h-12 w-12 rounded-full border-[3px] border-court-line"></div>
           <div class="absolute inset-0 h-12 w-12 animate-spin rounded-full border-[3px] border-transparent border-t-ball"></div>
         </div>
-        <p class="mt-4 text-sm font-medium text-gray-500">Ieškoma laisvų aikštelių...</p>
+        <p class="mt-4 text-sm font-medium text-gray-600">Ieškoma laisvų aikštelių...</p>
       </div>
 
       <div v-else-if="error" class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50/50 p-8 text-center">
@@ -140,7 +140,7 @@
             turi laisvą {{ duration }} min{{ fromTime ? ` nuo ${fromTime}` : '' }}<span class="hidden lg:inline"> · {{ selectedDayLabel }}</span>
           </p>
           <button type="button" @click="refresh()" aria-label="Atnaujinti"
-            class="flex h-11 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs text-gray-500 transition hover:bg-gray-100 hover:text-gray-700">
+            class="flex h-11 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs text-gray-600 transition hover:bg-gray-100 hover:text-gray-700">
             <svg :class="['h-4 w-4', refreshing ? 'animate-spin' : '']" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
@@ -191,7 +191,7 @@
         </div>
 
         <!-- Data freshness indicator -->
-        <p v-if="data" class="mt-6 text-center text-[11px] text-gray-500">
+        <p v-if="data" class="mt-6 text-center text-[11px] text-gray-600">
           {{ data.fromCache ? `Talpykla · prieš ${data.cacheAgeSeconds}s` : 'Atnaujinta' }} · {{ formatTime(data.fetchedAt) }}
         </p>
       </template>
@@ -201,7 +201,7 @@
     <aside v-if="panelSession" ref="panelEl" tabindex="-1" aria-label="Pasirinktas laikas"
       class="sticky top-20 max-h-[calc(100vh-6rem)] w-[22rem] shrink-0 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-lg outline-none">
       <button type="button" aria-label="Uždaryti" @click="selectedKey = null"
-        class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+        class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-700">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
         </svg>

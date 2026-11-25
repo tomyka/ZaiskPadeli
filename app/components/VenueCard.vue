@@ -14,7 +14,7 @@
         <span class="shrink-0 text-[13px] font-bold text-ink tabular-nums">
           {{ sessions.starts.length }} {{ ltPlural(sessions.starts.length, 'laikas', 'laikai', 'laikų') }}
         </span>
-        <svg :class="['h-5 w-5 shrink-0 text-gray-500 transition-transform', expanded ? 'rotate-180' : '']"
+        <svg :class="['h-5 w-5 shrink-0 text-gray-600 transition-transform', expanded ? 'rotate-180' : '']"
           fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
         </svg>

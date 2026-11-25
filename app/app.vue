@@ -9,13 +9,13 @@
         <div class="flex h-14 items-center justify-between">
           <a href="/" class="group flex select-none items-center gap-2.5">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 32" class="h-7 w-5 shrink-0 transition-transform duration-300 group-hover:rotate-[-8deg]" aria-hidden="true">
-              <ellipse cx="12" cy="10.5" rx="9" ry="10" fill="#ea580c"/>
-              <ellipse cx="12" cy="10.5" rx="7" ry="7.8" fill="#fb923c"/>
-              <circle cx="9.5" cy="8" r="1" fill="#ea580c"/><circle cx="12" cy="8" r="1" fill="#ea580c"/><circle cx="14.5" cy="8" r="1" fill="#ea580c"/>
-              <circle cx="9.5" cy="11" r="1" fill="#ea580c"/><circle cx="12" cy="11" r="1" fill="#ea580c"/><circle cx="14.5" cy="11" r="1" fill="#ea580c"/>
-              <circle cx="9.5" cy="14" r="1" fill="#ea580c"/><circle cx="12" cy="14" r="1" fill="#ea580c"/><circle cx="14.5" cy="14" r="1" fill="#ea580c"/>
-              <rect x="10.5" y="19" width="3" height="10" rx="1.5" fill="#d1d5db"/>
-              <line x1="10.5" y1="22" x2="13.5" y2="22" stroke="#111827" stroke-width="0.6"/><line x1="10.5" y1="25" x2="13.5" y2="25" stroke="#111827" stroke-width="0.6"/>
+              <ellipse cx="12" cy="10.5" rx="9" ry="10" class="fill-ball-deep"/>
+              <ellipse cx="12" cy="10.5" rx="7" ry="7.8" class="fill-ball"/>
+              <circle cx="9.5" cy="8" r="1" class="fill-ball-deep"/><circle cx="12" cy="8" r="1" class="fill-ball-deep"/><circle cx="14.5" cy="8" r="1" class="fill-ball-deep"/>
+              <circle cx="9.5" cy="11" r="1" class="fill-ball-deep"/><circle cx="12" cy="11" r="1" class="fill-ball-deep"/><circle cx="14.5" cy="11" r="1" class="fill-ball-deep"/>
+              <circle cx="9.5" cy="14" r="1" class="fill-ball-deep"/><circle cx="12" cy="14" r="1" class="fill-ball-deep"/><circle cx="14.5" cy="14" r="1" class="fill-ball-deep"/>
+              <rect x="10.5" y="19" width="3" height="10" rx="1.5" class="fill-ink-muted"/>
+              <line x1="10.5" y1="22" x2="13.5" y2="22" class="stroke-ink" stroke-width="0.6"/><line x1="10.5" y1="25" x2="13.5" y2="25" class="stroke-ink" stroke-width="0.6"/>
             </svg>
             <span class="font-display text-[22px] font-bold uppercase tracking-wide text-white">
               Žaisk <span class="text-ball">Padelį</span>

@@ -13,7 +13,7 @@
           <header :class="['flex items-start gap-3 px-5 pt-3', showTitle ? '' : 'absolute right-0 top-2 z-10']">
             <h2 v-if="showTitle" class="min-w-0 flex-1 text-xl font-bold text-gray-900">{{ title }}</h2>
             <button type="button" aria-label="Uždaryti" @click="emit('close')"
-              class="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+              class="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-700">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
