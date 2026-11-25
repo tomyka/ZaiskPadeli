@@ -8,16 +8,29 @@ describe('parsePrefs', () => {
     expect(parsePrefs('junk')).toEqual(DEFAULT_PREFS)
   })
 
-  it('keeps valid values, including an explicit "all cities"', () => {
-    expect(parsePrefs({ city: null, duration: 60, type: 'singles', indoor: false }))
-      .toEqual({ city: null, duration: 60, type: 'singles', indoor: false })
+  it('keeps valid values, including an explicit "everywhere"', () => {
+    expect(parsePrefs({ county: null, municipality: null, duration: 60, type: 'singles', indoor: false }))
+      .toEqual({ county: null, municipality: null, duration: 60, type: 'singles', indoor: false })
+    expect(parsePrefs({ county: 'Kauno', municipality: 'Prienų r.' }))
+      .toEqual({ ...DEFAULT_PREFS, county: 'Kauno', municipality: 'Prienų r.' })
+  })
+
+  it('drops a municipality that is not in the chosen county, or has no county', () => {
+    expect(parsePrefs({ county: 'Vilniaus', municipality: 'Prienų r.' }).municipality).toBeNull()
+    expect(parsePrefs({ county: null, municipality: 'Kaunas' }).municipality).toBeNull()
+  })
+
+  it('maps a saved city from before counties to its county', () => {
+    expect(parsePrefs({ city: 'Panevėžys', duration: 60 })).toMatchObject({ county: 'Panevėžio', municipality: null, duration: 60 })
+    expect(parsePrefs({ city: null }).county).toBeNull()
+    expect(parsePrefs({ city: 'Paris' }).county).toBe(DEFAULT_PREFS.county)
   })
 
   it('replaces each tampered field with its default independently', () => {
-    expect(parsePrefs({ city: 'Paris', duration: 45, type: 'unknown', indoor: 'yes' }))
+    expect(parsePrefs({ county: 'Paris', municipality: 'Atlantis', duration: 45, type: 'unknown', indoor: 'yes' }))
       .toEqual({ ...DEFAULT_PREFS })
-    expect(parsePrefs({ city: 'Vilnius', duration: '90' }))
-      .toEqual({ ...DEFAULT_PREFS, city: 'Vilnius' })
+    expect(parsePrefs({ county: 'Vilniaus', duration: '90' }))
+      .toEqual({ ...DEFAULT_PREFS, county: 'Vilniaus' })
   })
 })
 

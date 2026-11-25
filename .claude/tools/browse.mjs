@@ -15,7 +15,7 @@
  *     { "click": { "selector": "article button", "nth": 2 } },
  *     { "key": "Escape" },                                // Tab, Shift+Tab, Enter, Space, ArrowDown, Escape...
  *     { "type": "hello" },                                // into the focused element
- *     { "select": { "label": "Miestas", "option": "Vilnius" } }, // native <select> by aria/label text or selector
+ *     { "select": { "label": "Apskritis", "option": "Vilniaus apskr." } }, // native <select> by aria/label text or selector
  *     { "scroll": 600 },                                  // px down (negative = up)
  *     { "resize": { "width": 1440, "height": 900, "mobile": false } },
  *     { "screenshot": "out/step.png" },                   // viewport only

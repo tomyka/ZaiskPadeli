@@ -1,10 +1,10 @@
-import type { City } from './types'
+import { MUNICIPALITIES, countyOf, type County, type Municipality } from './regions'
 
 /**
  * Single source of truth for every venue shown in the app.
  *
  * Pure data — no scraper imports — so the client can import it too
- * (colours, active cities). Scrapers are bound to these ids in scraper-all.ts,
+ * (colours, active regions). Scrapers are bound to these ids in scraper-all.ts,
  * where the type system enforces that every venue here has a scraper.
  *
  * Order here is the order venues are listed in the UI.
@@ -18,8 +18,8 @@ export interface VenueInfo {
   id: string
   name: string
   address: string
-  /** City filter the venue is listed under (venues just outside a city use the nearest one) */
-  city: City
+  /** The municipality the venue is actually in, e.g. 'Prienų r.' for a venue outside Prienai */
+  municipality: Municipality
   bookingUrl: string
   /** Default for courts whose scraper doesn't say; per-court values win */
   indoor?: boolean
@@ -33,7 +33,7 @@ export const VENUES = [
     id: 'padelhub',
     name: 'Balcia Padel Hub',
     address: 'B. Brazdžionio g. 25, Kaunas',
-    city: 'Kaunas',
+    municipality: 'Kaunas',
     bookingUrl: 'https://savpadelhub.mokesta.lt/',
     indoor: true,
     color: '#3b82f6',
@@ -42,7 +42,7 @@ export const VENUES = [
     id: 'padelhouse',
     name: 'Padel House',
     address: 'A. Juozapavičiaus pr. 3, Kaunas',
-    city: 'Kaunas',
+    municipality: 'Kaunas',
     bookingUrl: 'https://rezervacija.padelhouse.lt/',
     indoor: true,
     color: '#f97316',
@@ -51,7 +51,7 @@ export const VENUES = [
     id: 'tennisspace',
     name: 'Tennis Space',
     address: 'Islandijos pl. 9C, Kaunas',
-    city: 'Kaunas',
+    municipality: 'Kaunas',
     bookingUrl: 'https://savitarna.tennisspace.lt/reservation/short?iPlaceId=4',
     indoor: true,
     color: '#22c55e',
@@ -60,7 +60,7 @@ export const VENUES = [
     id: 'kaunopadelis',
     name: 'Kauno Padelio Klubas',
     address: 'Lyderystės g. 6, Kaunas',
-    city: 'Kaunas',
+    municipality: 'Kaunas',
     bookingUrl: 'https://savitarna.kaunopadelis.lt/reservation/short',
     indoor: true,
     color: '#eab308',
@@ -69,7 +69,7 @@ export const VENUES = [
     id: 'padel4u',
     name: 'Padel4U',
     address: 'Lakūnų pl., Kaunas',
-    city: 'Kaunas',
+    municipality: 'Kaunas',
     bookingUrl: 'https://padel4u.cloud/',
     // indoor/outdoor not stated by the club — left unknown (shown under both filters)
     color: '#d946ef',
@@ -79,7 +79,7 @@ export const VENUES = [
     id: 'vilniuspadel',
     name: 'Vilnius Padel Arena',
     address: 'Žygio g. 97A, Vilnius',
-    city: 'Vilnius',
+    municipality: 'Vilnius',
     bookingUrl: 'https://rezervacijos.vilniuspadel.lt/reservation/short',
     indoor: true,
     color: '#8b5cf6',
@@ -89,7 +89,7 @@ export const VENUES = [
     id: 'a1padel',
     name: 'A1Padel Klaipėda',
     address: 'Smilgų g. 5, Klaipėda',
-    city: 'Klaipėda',
+    municipality: 'Klaipėda',
     bookingUrl: 'https://savitarna.a1padel.lt/reservation/short',
     indoor: true,
     color: '#06b6d4',
@@ -98,8 +98,8 @@ export const VENUES = [
   {
     id: 'simonas',
     name: 'Simonas Tennis Club',
-    address: 'Verslo I g. 7, Liūdynė, Panevėžys',
-    city: 'Panevėžys',
+    address: 'Verslo I g. 7, Liūdynė, Panevėžio r.',
+    municipality: 'Panevėžio r.',
     bookingUrl: 'https://simonastennis.lt/rezervacija',
     indoor: true,
     color: '#ec4899',
@@ -108,17 +108,17 @@ export const VENUES = [
     id: 'kpadel',
     name: 'K-Padel',
     address: 'Ramygalos g. 149E, Panevėžys',
-    city: 'Panevėžys',
+    municipality: 'Panevėžys',
     bookingUrl: 'https://app.moove.lt/padel/reservation',
     // indoor decided per court ("laukas" = outdoor)
     color: '#6366f1',
   },
-  // ── Kaunas region (listed under Kaunas) ────────────────────────────────────
+  // ── Prienų r. (Kauno apskritis) ─────────────────────────────────────────
   {
     id: 'prienuose',
     name: 'Padelis Prienuose',
     address: 'Ropių g. 44, Prienai',
-    city: 'Kaunas',
+    municipality: 'Prienų r.',
     bookingUrl: 'https://padelisprienuose.lt/booking',
     indoor: false,
     color: '#f59e0b',
@@ -128,7 +128,7 @@ export const VENUES = [
     id: 'zirmunai',
     name: 'Žirmūnų Padelio Arena',
     address: 'Žirmūnų g. 139, Vilnius',
-    city: 'Vilnius',
+    municipality: 'Vilnius',
     bookingUrl: 'https://www.winero.lt/arena/irmn-padelio-arena',
     indoor: true,
     color: '#14b8a6',
@@ -137,7 +137,7 @@ export const VENUES = [
     id: 'padelfactory',
     name: 'Padel Factory',
     address: 'Savanorių pr. 180, Vilnius',
-    city: 'Vilnius',
+    municipality: 'Vilnius',
     bookingUrl: 'https://www.winero.lt/arena/padel-factory',
     indoor: true,
     color: '#f43f5e',
@@ -146,7 +146,7 @@ export const VENUES = [
     id: 'bajada',
     name: 'BAJADA Padelio Kortai',
     address: 'Elektronikos g. 64, Panevėžys',
-    city: 'Panevėžys',
+    municipality: 'Panevėžys',
     bookingUrl: 'https://www.panevezyspadel.lt',
     indoor: true,
     color: '#0ea5e9',
@@ -155,7 +155,7 @@ export const VENUES = [
     id: 'aukstaitijos',
     name: 'Aukštaitijos Padelio Klubas',
     address: 'Parko g. 16, Panevėžys',
-    city: 'Panevėžys',
+    municipality: 'Panevėžys',
     bookingUrl: 'https://www.winero.lt/arenas',
     indoor: true,
     color: '#a855f7',
@@ -164,7 +164,7 @@ export const VENUES = [
     id: 'harmonypark',
     name: 'Harmony Park',
     address: 'Vazgaikiemis, Prienų raj.',
-    city: 'Kaunas',
+    municipality: 'Prienų r.',
     bookingUrl: 'https://www.winero.lt/arena/harmony-park',
     indoor: false,
     color: '#84cc16',
@@ -179,5 +179,13 @@ export function venueInfo(id: string): VenueInfo | undefined {
   return BY_ID.get(id)
 }
 
-/** Cities that have at least one venue — the rest are shown as "coming soon" */
-export const ACTIVE_CITIES: ReadonlySet<City> = new Set(VENUES.map(v => v.city))
+/** Municipalities that have at least one venue */
+export const ACTIVE_MUNICIPALITIES: ReadonlySet<Municipality> = new Set(VENUES.map(v => v.municipality))
+
+/** Counties that have at least one venue — the rest are shown as "coming soon" */
+export const ACTIVE_COUNTIES: ReadonlySet<County> = new Set(VENUES.map(v => countyOf(v.municipality)))
+
+/** A county's municipalities that have venues (city first): the choices for narrowing that county */
+export function activeMunicipalitiesIn(county: County): Municipality[] {
+  return MUNICIPALITIES.filter(m => countyOf(m) === county && ACTIVE_MUNICIPALITIES.has(m))
+}

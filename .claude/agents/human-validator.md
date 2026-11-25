@@ -24,8 +24,8 @@ Phone personas: viewport about 390x844, `"mobile": true`. Desktop: 1440x900 or w
 ## What to check (as relevant to your persona)
 - Can I find a court for the time/duration I want, and get to the venue's booking page, without help?
 - Do labels, prices and times make sense and match each other (card vs. session details)? Are durations/prices plausible?
-- Filters: date, duration, start time, city, court type, indoor/outdoor, clear. Do results respond as expected? Is the current filter state obvious?
-- Feedback: loading, refresh, empty results (try a city with no data, e.g. Šiauliai), errors.
+- Filters: date, duration, start time, county (and its municipality chips), court type, indoor/outdoor, clear. Do results respond as expected? Is the current filter state obvious?
+- Feedback: loading, refresh, empty results (try a county with no data, e.g. Šiaulių apskr.), errors.
 - Readability on a phone: text size, contrast, tap targets (aim for 44px), nothing cut off or overlapping (e.g. floating buttons over content).
 - Keyboard: Tab order sensible, focus visible, Escape closes dialogs/panels, focus returns.
 - Edge cases: late-night slots past midnight, switching dates while a panel is open, resizing between phone and desktop widths.

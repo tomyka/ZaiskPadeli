@@ -26,7 +26,8 @@ server/
     analytics.ts             # request logging
     rate-limit.ts            # 20 req/IP/min for /api/*
   utils/
-    types.ts                 # shared TypeScript interfaces (Court, Venue, TimeSlot, City, etc.)
+    types.ts                 # shared TypeScript interfaces (Court, Venue, TimeSlot, ScrapeReport, etc.)
+    regions.ts               # counties + municipalities (pure data); venues record a municipality, the county is derived
     cache.ts                 # Vercel KV cache (in-memory fallback for local dev)
     time.ts                  # Lithuanian timezone utilities — always use these
     venues.ts                # VENUE REGISTRY — single source of venue metadata (pure data, also imported by the client)
@@ -63,7 +64,7 @@ nextDatesLT(n)      // → ["2026-05-28", "2026-05-29", ...]
 
 ### Adding a new venue
 
-1. Add an entry to `VENUES` in `server/utils/venues.ts` (id, name, address, city, bookingUrl, indoor default, accent colour). This alone drives the venue card, filter pill colour and the city's "coming soon" badge.
+1. Add an entry to `VENUES` in `server/utils/venues.ts` (id, name, address, municipality, bookingUrl, indoor default, accent colour). This alone drives the venue card, filter pill colour and the county's "coming soon" badge. If the venue's municipality is new, add it to `MUNICIPALITY_COUNTY` in `server/utils/regions.ts`.
 2. Bind a scraper in `SCRAPERS` in `server/utils/scraper-all.ts`. `SCRAPERS` is a `Record<VenueId, Scraper>`, so **typecheck fails until every registry venue has a scraper**.
    - **Winero arena**: `myvenue: wineroScraper({ arenaId: '<uuid from /api/arenas?sport=padel>', skipCourts: ['kamuoliukų mašina', 'ball machine'] })`
    - **nTennis/nSoft site**: a ~10-line file calling `fetchNTennisGrid({ baseUrl, placeId }, date)` then `parseNTennisGrid(html, { idPrefix: venue.id, ... })`
@@ -112,7 +113,7 @@ The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. A
 
 ### UI filter state (index.vue)
 
-Refs: `selectedCity`, `selectedDate`, `filterStart`, `filterEnd`, `filterType`, `filterIndoor`, `activeVenue`. The computed `filteredCourts(venue)` applies all active filters. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
+Refs: `selectedCounty`, `selectedMunicipality`, `selectedDate`, `filterStart`, `filterEnd`, `filterType`, `filterIndoor`, `activeVenue`. The computed `filteredCourts(venue)` applies all active filters. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
 
 ### Deployment
 

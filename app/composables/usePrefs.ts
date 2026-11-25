@@ -20,11 +20,16 @@ export function usePrefs() {
   }
 
   return {
-    city: field('city'),
+    /** Changing the county also clears the municipality, which belonged to the old one */
+    county: computed<Prefs['county']>({
+      get: () => prefs.value.county,
+      set: (v) => { cookie.value = { ...prefs.value, county: v, municipality: null } },
+    }),
+    municipality: field('municipality'),
     duration: field('duration'),
     type: field('type'),
     indoor: field('indoor'),
-    /** Court type and indoor back to "any"; city and duration are kept */
+    /** Court type and indoor back to "any"; location and duration are kept */
     clearCourtFilters() {
       cookie.value = { ...prefs.value, type: null, indoor: null }
     },

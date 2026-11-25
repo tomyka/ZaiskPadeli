@@ -68,7 +68,7 @@ export async function runScraper(
     id: info.id,
     name: info.name,
     address: info.address,
-    city: info.city,
+    municipality: info.municipality,
     bookingUrl: info.bookingUrl,
     courts: [],
     lastUpdated: new Date().toISOString(),

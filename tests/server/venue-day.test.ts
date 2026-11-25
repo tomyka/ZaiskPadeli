@@ -29,7 +29,7 @@ describe('runScraper slot order', () => {
   it('delivers each court\'s slots in venue-day order, whatever order the scraper used', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const info: VenueInfo = {
-      id: 'test', name: 'T', address: 'A', city: 'Kaunas', bookingUrl: 'https://x', indoor: true, color: '#000000',
+      id: 'test', name: 'T', address: 'A', municipality: 'Kaunas', bookingUrl: 'https://x', indoor: true, color: '#000000',
     }
     const lexical = ['00:00', '00:30', '22:30', '23:00', '23:30'].map(time => ({ time, available: true, price: 10 }))
     const venue = await runScraper(info, async () => [{ id: 'c', name: 'C', type: 'doubles', slots: lexical }], '2026-11-25')

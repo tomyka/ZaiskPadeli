@@ -103,8 +103,8 @@ const props = defineProps<{
   strip: StripCell[]
   duration: number
   expanded: boolean
-  /** Show the venue's city in the info line (when results span several cities) */
-  showCity?: boolean
+  /** Show the venue's municipality in the info line (when results span several) */
+  showMunicipality?: boolean
   /** Start time whose details are open beside the list (desktop), highlighted here */
   selectedTime?: string | null
 }>()
@@ -124,7 +124,7 @@ const accent = computed(() => venueInfo(props.venue.id)?.color ?? '#9ca3af')
 const meta = computed(() => {
   if (props.venue.error) return props.venue.address
   const n = props.courts.length
-  const parts: string[] = props.showCity ? [props.venue.city] : []
+  const parts: string[] = props.showMunicipality ? [props.venue.municipality] : []
   parts.push(`${n} ${ltPlural(n, 'kortas', 'kortai', 'kortų')}`)
   // Doubles is what a plain price means; singles is always labelled (it is usually much cheaper)
   const p = venuePricesByKind(props.sessions.starts)

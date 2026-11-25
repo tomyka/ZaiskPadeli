@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildAvailabilityView, chipPrice, courtKind, courtMatches, nearestCity, pricesByKind, resolveSession,
+  buildAvailabilityView, chipPrice, courtKind, courtMatches, pricesByKind, resolveSession,
   venuePricesByKind, type ViewFilters,
 } from '../../app/utils/availability'
 import { court, venue } from './fixtures'
 import { venueSessions } from '../../app/utils/sessions'
+import { nearestCounty } from '../../server/utils/regions'
 
-const ANY: ViewFilters = { city: null, duration: 60, type: null, indoor: null, fromTime: '' }
+const ANY: ViewFilters = { county: null, municipality: null, duration: 60, type: null, indoor: null, fromTime: '' }
 const NOT_TODAY = -1
 
 describe('courtKind / courtMatches', () => {
@@ -31,8 +32,8 @@ describe('buildAvailabilityView', () => {
   const full = venue('f', 'Kaunas', [court('f1', '0000')])
   const broken = venue('b', 'Kaunas', [], { error: 'Nepavyko gauti duomenų' })
 
-  it('filters by city, keeps errored venues, drops venues with no session', () => {
-    const view = buildAvailabilityView([kaunas, vilnius, full, broken], { ...ANY, city: 'Kaunas' }, NOT_TODAY)
+  it('filters by county, keeps errored venues, drops venues with no session', () => {
+    const view = buildAvailabilityView([kaunas, vilnius, full, broken], { ...ANY, county: 'Kauno' }, NOT_TODAY)
     expect(view.venues.map(v => v.venue.id)).toEqual(['k', 'b'])
     expect(view.bookableCount).toBe(1)
   })
@@ -51,8 +52,18 @@ describe('buildAvailabilityView', () => {
     expect(starts({ fromTime: '18:00' }, 19 * 60 + 10)).toEqual(['19:30', '20:00'])
   })
 
-  it('offers only not-yet-started times in the selected city for the start picker', () => {
-    const view = buildAvailabilityView([kaunas, vilnius], { ...ANY, city: 'Kaunas' }, 18 * 60 + 40)
+  it('lists every municipality of a county, or only the one it is narrowed to', () => {
+    const prienai = venue('p', 'Prienų r.', [court('p1', '1100')])
+    const ids = (f: Partial<ViewFilters>) =>
+      buildAvailabilityView([kaunas, prienai, vilnius], { ...ANY, ...f }, NOT_TODAY).venues.map(v => v.venue.id)
+    expect(ids({ county: 'Kauno' })).toEqual(['k', 'p'])
+    expect(ids({ county: 'Kauno', municipality: 'Prienų r.' })).toEqual(['p'])
+    expect(ids({ county: 'Kauno', municipality: 'Kaunas' })).toEqual(['k'])
+    expect(ids({})).toEqual(['k', 'p', 'v'])
+  })
+
+  it('offers only not-yet-started times in the selected region for the start picker', () => {
+    const view = buildAvailabilityView([kaunas, vilnius], { ...ANY, county: 'Kauno' }, 18 * 60 + 40)
     expect(view.startTimeOptions).toEqual(['19:00', '19:30'])
   })
 
@@ -85,10 +96,13 @@ describe('resolveSession', () => {
   })
 })
 
-describe('nearestCity', () => {
-  it('picks the closest city', () => {
-    expect(nearestCity(54.69, 25.28)).toBe('Vilnius')
-    expect(nearestCity(55.71, 21.15)).toBe('Klaipėda')
+describe('nearestCounty (regions.ts)', () => {
+  it('picks the county with the closest seat', () => {
+    expect(nearestCounty(54.69, 25.28)).toBe('Vilniaus')
+    expect(nearestCounty(55.71, 21.15)).toBe('Klaipėdos')
+    expect(nearestCounty(54.63, 23.95)).toBe('Kauno') // Prienai
+    expect(nearestCounty(55.50, 25.60)).toBe('Utenos')
+    expect(nearestCounty(54.40, 24.05)).toBe('Alytaus')
   })
 })
 

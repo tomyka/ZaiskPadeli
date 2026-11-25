@@ -9,7 +9,7 @@ const minutesAgo = (m: number) => new Date(NOW - m * 60_000).toISOString()
 const court: Court = { id: 'x-1', name: 'Kortas 1', type: 'doubles', slots: [{ time: '10:00', available: true, price: 20 }] }
 
 function venue(id: string, over: Partial<Venue> = {}): Venue {
-  return { id, name: id, address: '', city: 'Kaunas', bookingUrl: '', courts: [court], lastUpdated: minutesAgo(0), ...over }
+  return { id, name: id, address: '', municipality: 'Kaunas', bookingUrl: '', courts: [court], lastUpdated: minutesAgo(0), ...over }
 }
 const failed = (id: string) => venue(id, { courts: [], error: VENUE_ERROR.failed })
 

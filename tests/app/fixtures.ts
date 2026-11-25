@@ -1,4 +1,5 @@
-import type { City, Court, TimeSlot, Venue } from '../../server/utils/types'
+import type { Court, TimeSlot, Venue } from '../../server/utils/types'
+import type { Municipality } from '../../server/utils/regions'
 
 /** A court from a pattern: one char per 30-min slot from `first`; '1' free, '0' booked. */
 export function court(id: string, pattern: string, first = '18:00', price: number | null = 10, over: Partial<Court> = {}): Court {
@@ -11,6 +12,6 @@ export function court(id: string, pattern: string, first = '18:00', price: numbe
   return { id, name: id, type: 'doubles', slots, ...over }
 }
 
-export function venue(id: string, city: City, courts: Court[], over: Partial<Venue> = {}): Venue {
-  return { id, name: id, address: '', city, bookingUrl: `https://${id}.example`, courts, lastUpdated: '', ...over }
+export function venue(id: string, municipality: Municipality, courts: Court[], over: Partial<Venue> = {}): Venue {
+  return { id, name: id, address: '', municipality, bookingUrl: `https://${id}.example`, courts, lastUpdated: '', ...over }
 }

@@ -1,5 +1,6 @@
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
-import { CITY_COORDS, type City, type Court, type CourtKind, type Venue } from '../../server/utils/types'
+import type { Court, CourtKind, Venue } from '../../server/utils/types'
+import { inRegion, type RegionFilter } from '../../server/utils/regions'
 import { byDayTime, dayMinutes, hasSlotStarted } from '../../server/utils/time'
 import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueSessions } from './sessions'
 
@@ -14,8 +15,7 @@ export function courtKind(court: Court): CourtKind {
   return court.type === 'singles' ? 'singles' : 'doubles'
 }
 
-export interface ViewFilters {
-  city: City | null
+export interface ViewFilters extends RegionFilter {
   duration: number
   type: CourtKind | null
   indoor: boolean | null
@@ -42,16 +42,16 @@ export interface AvailabilityView {
   /** Venues with at least one session, plus venues that failed to load (shown with their error) */
   venues: VenueView[]
   bookableCount: number
-  /** Choices for the "nuo" picker: every not-yet-started slot time on matching courts in the selected city */
+  /** Choices for the "nuo" picker: every not-yet-started slot time on matching courts in the selected region */
   startTimeOptions: string[]
 }
 
 /** `currentMinutes` comes from `currentMinutesFor(date)`: -1 when the date isn't today. */
 export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMinutes: number): AvailabilityView {
-  const inCity = venues.filter(v => !f.city || v.city === f.city)
+  const inRegionVenues = venues.filter(v => inRegion(v.municipality, f))
   const earliest = Math.max(currentMinutes, f.fromTime ? dayMinutes(f.fromTime) : 0)
 
-  const all: VenueView[] = inCity.map(venue => {
+  const all: VenueView[] = inRegionVenues.map(venue => {
     const courts = venue.courts.filter(c => courtMatches(c, f))
     return {
       venue,
@@ -94,17 +94,6 @@ export function resolveSession(view: AvailabilityView, venueId: string, time: st
     start,
     others: v.sessions.starts.filter(s => s.time !== time).slice(0, OTHER_STARTS),
   }
-}
-
-/** Closest city with coordinates; plain lat/lng distance is fine at Lithuania's scale. */
-export function nearestCity(lat: number, lng: number): City {
-  let nearest: City = 'Kaunas'
-  let minDist = Infinity
-  for (const [city, c] of Object.entries(CITY_COORDS) as [City, { lat: number; lng: number }][]) {
-    const dist = Math.hypot(lat - c.lat, lng - c.lng)
-    if (dist < minDist) { minDist = dist; nearest = city }
-  }
-  return nearest
 }
 
 // ── Prices by court type ──

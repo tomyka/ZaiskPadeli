@@ -64,27 +64,27 @@
         </label>
       </div>
 
-      <!-- City (+ more filters on phones) -->
-      <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Miestas</p>
+      <!-- County (+ more filters on phones), then its municipalities when it has several -->
+      <p class="mb-2 hidden text-xs font-semibold uppercase tracking-wide text-gray-600 lg:block">Apskritis</p>
       <div class="mb-4 flex items-center gap-1.5 lg:mb-5">
         <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-court-line bg-white pl-3 pr-2 text-sm text-gray-800 focus-within:ring-[3px] focus-within:ring-ball-deep focus-within:ring-offset-2 lg:flex-1">
           <svg class="h-4 w-4 shrink-0 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
           </svg>
-          <span class="sr-only">Miestas</span>
-          <select v-model="selectedCity" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-5 font-medium focus:outline-none">
-            <option :value="null">Visi miestai</option>
-            <option v-for="city in CITIES" :key="city" :value="city">
-              {{ city }}{{ ACTIVE_CITIES.has(city) ? '' : ' (greitai)' }}
+          <span class="sr-only">Apskritis</span>
+          <select v-model="selectedCounty" class="min-w-0 flex-1 self-stretch appearance-none bg-transparent pr-5 font-medium focus:outline-none">
+            <option :value="null">Visa Lietuva</option>
+            <option v-for="county in COUNTIES" :key="county" :value="county">
+              {{ countyLabel(county) }}{{ ACTIVE_COUNTIES.has(county) ? '' : ' (greitai)' }}
             </option>
           </select>
           <svg class="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
           </svg>
         </label>
-        <button type="button" @click="detectCity" :disabled="gpsState === 'loading'"
-          :aria-label="gpsState === 'error' ? 'Vieta neprieinama' : 'Nustatyti miestą pagal mano vietą'"
+        <button type="button" @click="detectCounty" :disabled="gpsState === 'loading'"
+          :aria-label="gpsState === 'error' ? 'Vieta neprieinama' : 'Nustatyti apskritį pagal mano vietą'"
           :title="gpsState === 'error' ? 'GPS neprieinamas' : 'Mano vieta'"
           :class="['flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white transition',
             gpsState === 'error' ? 'border-red-200 text-red-500' : 'border-court-line text-gray-600 hover:border-ink/40 hover:text-ink']">
@@ -102,6 +102,16 @@
             <path stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4" />
           </svg>
           Filtrai<span v-if="extraFilterCount" class="tabular-nums"> · {{ extraFilterCount }}</span>
+        </button>
+      </div>
+
+      <div v-if="municipalityChoices.length > 1" role="group" aria-label="Savivaldybė"
+        class="-mt-2 mb-4 flex flex-wrap gap-1.5 lg:-mt-3 lg:mb-5">
+        <button v-for="m in [null, ...municipalityChoices]" :key="m ?? 'all'" type="button"
+          :aria-pressed="selectedMunicipality === m" @click="selectedMunicipality = m"
+          :class="['h-11 rounded-full border px-3.5 text-sm transition',
+            selectedMunicipality === m ? 'border-ink bg-ink font-semibold text-ball' : 'border-court-line bg-white text-ink hover:border-ink/40']">
+          {{ m ?? 'Visa apskritis' }}
         </button>
       </div>
 
@@ -152,7 +162,7 @@
              place so it never jumps away from the pointer). While the session panel
              takes ~22rem, step down one column so time chips keep their size -->
         <div :class="['grid items-start gap-3', panelSession ? 'min-[1700px]:grid-cols-2' : 'lg:grid-cols-2 min-[1700px]:grid-cols-3']">
-          <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id" :show-city="!selectedCity"
+          <VenueCard v-for="(v, vIdx) in view.venues" :key="v.venue.id" :show-municipality="spansMunicipalities"
             class="venue-card"
             :style="{ animationDelay: `${vIdx * 50}ms` }"
             :venue="v.venue" :courts="v.courts" :sessions="v.sessions" :strip="v.strip"
@@ -164,16 +174,20 @@
 
         <!-- No results at all -->
         <div v-if="view.venues.length === 0" class="py-16 text-center">
-          <template v-if="selectedCity && !ACTIVE_CITIES.has(selectedCity)">
-            <!-- No data for this city at all: filters can't help, offer another city instead -->
-            <p class="font-medium text-gray-600">{{ CITY_GENITIVE[selectedCity] }} kortų duomenų kol kas neturime.</p>
-            <button type="button" @click="selectedCity = null"
+          <template v-if="selectedCounty && !ACTIVE_COUNTIES.has(selectedCounty)">
+            <!-- No data for this county at all: filters can't help, offer the whole country instead -->
+            <p class="font-medium text-gray-600">{{ countyGenitive(selectedCounty) }} kortų duomenų kol kas neturime.</p>
+            <button type="button" @click="selectedCounty = null"
               class="mt-4 min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
-              Rodyti visus miestus
+              Rodyti visą Lietuvą
             </button>
           </template>
           <p v-else class="font-medium text-gray-600">Nėra laisvų {{ duration }} min laikų pagal pasirinktus filtrus</p>
-          <div v-if="!selectedCity || ACTIVE_CITIES.has(selectedCity)" class="mt-4 flex flex-wrap justify-center gap-2">
+          <div v-if="!selectedCounty || ACTIVE_COUNTIES.has(selectedCounty)" class="mt-4 flex flex-wrap justify-center gap-2">
+            <button v-if="selectedMunicipality" type="button" @click="selectedMunicipality = null"
+              class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
+              Rodyti visą apskritį
+            </button>
             <button v-if="duration !== DURATIONS[0]" type="button" @click="duration = DURATIONS[0]"
               class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-ball-text transition hover:bg-ball-tint">
               Bandyti {{ DURATIONS[0] }} min
@@ -241,16 +255,16 @@
 </template>
 
 <script setup lang="ts">
-import type { AvailabilityResponse, City } from '~~/server/utils/types'
-import { CITIES } from '~~/server/utils/types'
-import { ACTIVE_CITIES } from '~~/server/utils/venues'
+import type { AvailabilityResponse } from '~~/server/utils/types'
+import { COUNTIES, countyGenitive, countyLabel, nearestCounty } from '~~/server/utils/regions'
+import { ACTIVE_COUNTIES, activeMunicipalitiesIn } from '~~/server/utils/venues'
 import { MAX_DAYS_AHEAD, addDays, byDayTime, currentMinutesFor, dayOfWeek, isValidIsoDate, todayLT } from '~~/server/utils/time'
-import { buildAvailabilityView, nearestCity, resolveSession, type SelectedSession } from '~/utils/availability'
+import { buildAvailabilityView, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
 import { formatClock, ltPlural } from '~/utils/format'
 
-// Remembered across visits (cookie): city, duration, court type, indoor
-const { city: selectedCity, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
+// Remembered across visits (cookie): county, municipality, duration, court type, indoor
+const { county: selectedCounty, municipality: selectedMunicipality, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()
 
 // Re-read every minute so today's past starts drop off and the date pills roll over at midnight
 const nowTick = ref(Date.now())
@@ -297,7 +311,10 @@ const selectedDayLabel = computed(() =>
 )
 
 watch(selectedDate, () => { expanded.value = new Set(); selectedKey.value = null })
-watch(selectedCity, () => { expanded.value = new Set() })
+watch([selectedCounty, selectedMunicipality], () => { expanded.value = new Set() })
+
+/** Municipalities with venues in the chosen county; chips appear only when there is a choice */
+const municipalityChoices = computed(() => selectedCounty.value ? activeMunicipalitiesIn(selectedCounty.value) : [])
 
 const { data, pending, error, refresh: rawRefresh } = useFetch<AvailabilityResponse>('/api/availability', {
   query: { date: selectedDate },
@@ -312,7 +329,8 @@ async function refresh() {
 const view = computed(() => buildAvailabilityView(
   data.value?.venues ?? [],
   {
-    city: selectedCity.value,
+    county: selectedCounty.value,
+    municipality: selectedMunicipality.value,
     duration: duration.value,
     type: filterType.value,
     indoor: filterIndoor.value,
@@ -406,17 +424,15 @@ const startTimeOptions = computed(() => {
   return fromTime.value && !opts.includes(fromTime.value) ? [...opts, fromTime.value].sort(byDayTime) : opts
 })
 
-/** "Šiaulių kortų duomenų kol kas neturime" — city names in the genitive */
-const CITY_GENITIVE: Record<City, string> = {
-  Vilnius: 'Vilniaus', Kaunas: 'Kauno', Klaipėda: 'Klaipėdos', Šiauliai: 'Šiaulių', Panevėžys: 'Panevėžio',
-}
+/** Cards name their municipality when the listed venues are not all in one */
+const spansMunicipalities = computed(() => new Set(view.value.venues.map(v => v.venue.municipality)).size > 1)
 
-function detectCity() {
+function detectCounty() {
   if (!navigator.geolocation) { gpsState.value = 'error'; return }
   gpsState.value = 'loading'
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      selectedCity.value = nearestCity(pos.coords.latitude, pos.coords.longitude)
+      selectedCounty.value = nearestCounty(pos.coords.latitude, pos.coords.longitude)
       gpsState.value = 'done'
     },
     () => { gpsState.value = 'error' },
