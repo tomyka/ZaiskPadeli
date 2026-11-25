@@ -1,147 +1,100 @@
 <template>
-  <div class="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
+  <div class="mx-auto max-w-3xl px-4 pb-24 pt-4 sm:px-6 sm:pt-6">
 
-    <!-- ═══ DATE NAVIGATION ═══ -->
-    <nav class="mb-5 flex items-center gap-2" aria-label="Datos pasirinkimas">
+    <!-- ═══ DATE ═══ -->
+    <nav class="mb-3 flex items-center gap-2" aria-label="Datos pasirinkimas">
       <div class="flex flex-1 gap-1.5 overflow-x-auto no-scrollbar">
-        <button v-for="day in quickDays" :key="day.date"
+        <button v-for="day in quickDays" :key="day.date" type="button"
+          :aria-pressed="selectedDate === day.date"
           @click="selectedDate = day.date"
           :class="[
-            'shrink-0 flex flex-col items-center rounded-xl min-w-[3.25rem] px-2.5 py-2 transition-all duration-200',
+            'flex h-[52px] min-w-[3.5rem] shrink-0 flex-col items-center justify-center rounded-xl px-2.5 transition-colors duration-200',
             selectedDate === day.date
-              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-              : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:shadow-sm'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+              : 'border border-gray-200 bg-white text-gray-700 hover:border-emerald-300'
           ]">
-          <span class="text-[10px] font-medium uppercase tracking-wide"
-            :class="selectedDate === day.date ? 'text-emerald-200' : 'text-gray-400'">
-            {{ day.label }}
-          </span>
-          <span class="text-base font-bold leading-tight tabular-nums">{{ day.day }}</span>
+          <span class="text-[11px] font-medium"
+            :class="selectedDate === day.date ? 'text-emerald-100' : 'text-gray-500'">{{ day.label }}</span>
+          <span class="text-[17px] font-bold leading-tight tabular-nums">{{ day.day }}</span>
         </button>
       </div>
       <!-- Calendar picker for dates beyond 7 days -->
       <label class="relative shrink-0 cursor-pointer" title="Pasirinkti datą">
+        <span class="sr-only">Pasirinkti kitą datą</span>
         <input type="date" v-model="selectedDate" :min="today" :max="maxDate"
-          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-        <div :class="['flex h-11 items-center justify-center rounded-xl border bg-white transition-all duration-200',
+          class="absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+        <span :class="['flex h-[52px] items-center justify-center rounded-xl border bg-white transition-colors duration-200',
           isCustomDate
-            ? 'border-emerald-400 text-emerald-600 px-3 gap-1.5 shadow-sm'
-            : 'border-gray-200 text-gray-400 w-11 hover:border-emerald-300 hover:text-emerald-600']">
-          <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            ? 'gap-1.5 border-emerald-500 px-3 text-emerald-700'
+            : 'w-12 border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-700']">
+          <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v9.75" />
           </svg>
           <span v-if="isCustomDate" class="text-xs font-semibold tabular-nums">{{ selectedDate.slice(5) }}</span>
-        </div>
+        </span>
       </label>
     </nav>
 
-    <!-- ═══ CITY FILTER ═══ -->
-    <div class="mb-3 flex items-center gap-2">
-      <svg class="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-      </svg>
-      <div class="flex flex-1 gap-1.5 overflow-x-auto no-scrollbar">
-        <button v-for="city in CITIES" :key="city"
-          @click="selectedCity = selectedCity === city ? null : city"
-          :class="[
-            'shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium border transition-all duration-200',
-            selectedCity === city
-              ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
-              : 'bg-white border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600'
-          ]">
-          {{ city }}
-          <span v-if="!ACTIVE_CITIES.has(city)"
-            class="ml-0.5 rounded-full bg-white/20 px-1 text-[8px] font-bold uppercase tracking-wider opacity-60">greitai</span>
-        </button>
-      </div>
-      <!-- GPS -->
-      <button v-if="gpsState === 'idle'" @click="detectCity"
-        class="shrink-0 flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-400 hover:border-emerald-300 hover:text-emerald-600 transition">
-        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+    <!-- ═══ DURATION + START TIME ═══ -->
+    <div class="mb-3 flex items-center gap-1.5" role="group" aria-label="Žaidimo trukmė">
+      <button v-for="d in DURATIONS" :key="d" type="button" :aria-pressed="duration === d"
+        @click="duration = d"
+        :class="['h-11 shrink-0 rounded-full border px-3.5 text-sm transition-colors',
+          duration === d
+            ? 'border-emerald-600 bg-emerald-600 font-semibold text-white'
+            : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-300']">
+        {{ d }} min
+      </button>
+      <label class="relative ml-auto flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-dashed px-3 text-sm"
+        :class="fromTime ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-gray-400 bg-white text-gray-700'">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+        <span class="sr-only">Pradžios laikas</span>
+        <select v-model="fromTime" class="min-w-0 appearance-none bg-transparent pr-1 font-medium focus:outline-none">
+          <option value="">Bet kada</option>
+          <option v-for="t in allTimeSlots" :key="t" :value="t">nuo {{ t }}</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- ═══ CITY + MORE FILTERS ═══ -->
+    <div class="mb-4 flex items-center gap-1.5">
+      <label class="relative flex h-11 min-w-0 items-center gap-1.5 rounded-full border border-gray-300 bg-white pl-3 pr-2 text-sm text-gray-800">
+        <svg class="h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
         </svg>
-        <span class="hidden sm:inline">Mano vieta</span>
+        <span class="sr-only">Miestas</span>
+        <select v-model="selectedCity" class="min-w-0 appearance-none bg-transparent pr-5 font-medium focus:outline-none">
+          <option :value="null">Visi miestai</option>
+          <option v-for="city in CITIES" :key="city" :value="city">
+            {{ city }}{{ ACTIVE_CITIES.has(city) ? '' : ' (greitai)' }}
+          </option>
+        </select>
+        <svg class="pointer-events-none absolute right-2.5 h-3.5 w-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+        </svg>
+      </label>
+      <button type="button" @click="detectCity" :disabled="gpsState === 'loading'"
+        :aria-label="gpsState === 'error' ? 'Vieta neprieinama' : 'Nustatyti miestą pagal mano vietą'"
+        :title="gpsState === 'error' ? 'GPS neprieinamas' : 'Mano vieta'"
+        :class="['flex h-11 w-11 shrink-0 items-center justify-center rounded-full border bg-white transition',
+          gpsState === 'error' ? 'border-red-200 text-red-500' : 'border-gray-300 text-gray-600 hover:border-emerald-300 hover:text-emerald-700']">
+        <svg v-if="gpsState === 'loading'" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+          <circle cx="12" cy="12" r="3.5" /><path stroke-linecap="round" d="M12 2.75v3M12 18.25v3M2.75 12h3M18.25 12h3" />
+        </svg>
       </button>
-      <span v-else-if="gpsState === 'loading'" class="shrink-0 text-xs text-gray-400 flex items-center gap-1">
-        <svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-      </span>
-      <span v-else-if="gpsState === 'done'" class="shrink-0 text-xs text-emerald-600 font-medium">📍 {{ selectedCity ?? 'Visi' }}</span>
-      <span v-else-if="gpsState === 'error'" class="shrink-0 text-[10px] text-red-400">GPS neprieinamas</span>
-    </div>
-
-    <!-- ═══ FILTERS ═══ -->
-    <div class="mb-5 flex flex-wrap items-center gap-2 rounded-2xl bg-white/60 border border-gray-100 px-3 py-2.5 backdrop-blur-sm">
-      <!-- Time range -->
-      <div class="flex items-center gap-1.5">
-        <svg class="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+      <button type="button" @click="filtersOpen = true"
+        :class="['ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition',
+          extraFilterCount ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-300']">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4" />
         </svg>
-        <select v-model="filterStart"
-          class="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400">
-          <option value="">Nuo</option>
-          <option v-for="t in allTimeSlots" :key="t" :value="t">{{ t }}</option>
-        </select>
-        <span class="text-gray-300 text-xs">–</span>
-        <select v-model="filterEnd" :disabled="!filterStart"
-          class="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-30">
-          <option value="">Iki</option>
-          <option v-for="t in endTimeSlots" :key="t" :value="t">{{ t }}</option>
-        </select>
-      </div>
-
-      <!-- Divider -->
-      <div class="h-5 w-px bg-gray-200 hidden sm:block"></div>
-
-      <!-- Court type -->
-      <div class="flex items-center gap-1.5">
-        <svg class="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-        </svg>
-        <select v-model="filterType"
-          class="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400">
-          <option :value="null">Visi kortai</option>
-          <option value="doubles">2v2 (dvejetai)</option>
-          <option value="singles">1v1 (vienetai)</option>
-        </select>
-      </div>
-
-      <!-- Divider -->
-      <div class="h-5 w-px bg-gray-200 hidden sm:block"></div>
-
-      <!-- Indoor / Outdoor -->
-      <div class="flex items-center gap-1.5">
-        <svg class="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12 12 2.25 21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-        </svg>
-        <select v-model="filterIndoor"
-          class="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400">
-          <option :value="null">Vidaus/Lauko</option>
-          <option :value="true">Vidaus</option>
-          <option :value="false">Lauko</option>
-        </select>
-      </div>
-
-      <!-- Venue pills -->
-      <div class="ml-auto flex flex-wrap gap-1.5">
-        <button v-for="venue in cityVenues" :key="venue.id"
-          @click="activeVenue = activeVenue === venue.id ? null : venue.id"
-          :class="['rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-200',
-            activeVenue === venue.id
-              ? ''
-              : 'border-gray-200 bg-white text-gray-400 hover:text-gray-600 hover:border-gray-300']"
-          :style="activeVenue === venue.id ? activePillStyle(venue.id) : undefined">
-          {{ venue.name }}
-        </button>
-      </div>
-
-      <!-- Clear filters -->
-      <button v-if="filterStart || filterType || filterIndoor !== null || activeVenue"
-        @click="clearFilters"
-        class="rounded-full border border-gray-200 px-2 py-1 text-[11px] text-gray-400 hover:text-red-500 hover:border-red-200 transition"
-        title="Išvalyti filtrus">
-        ✕
+        Filtrai<span v-if="extraFilterCount" class="tabular-nums"> · {{ extraFilterCount }}</span>
       </button>
     </div>
 
@@ -151,148 +104,61 @@
         <div class="h-12 w-12 rounded-full border-[3px] border-emerald-100"></div>
         <div class="absolute inset-0 h-12 w-12 animate-spin rounded-full border-[3px] border-transparent border-t-emerald-500"></div>
       </div>
-      <p class="mt-4 text-sm text-gray-400 font-medium">Ieškoma laisvų aikštelių...</p>
+      <p class="mt-4 text-sm font-medium text-gray-500">Ieškoma laisvų aikštelių...</p>
     </div>
 
     <!-- ═══ ERROR ═══ -->
     <div v-else-if="error" class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50/50 p-8 text-center">
-      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-        <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-        </svg>
-      </div>
       <p class="font-medium text-red-700">Klaida kraunant duomenis</p>
-      <p class="mt-1 text-sm text-red-400">Patikrinkite interneto ryšį ir bandykite dar kartą</p>
-      <button @click="refresh()" class="mt-4 rounded-xl bg-red-100 px-5 py-2.5 text-sm font-medium text-red-700 hover:bg-red-200 transition">
+      <p class="mt-1 text-sm text-red-600">Patikrinkite interneto ryšį ir bandykite dar kartą</p>
+      <button type="button" @click="refresh()" class="mt-4 min-h-[44px] rounded-xl bg-red-100 px-5 text-sm font-medium text-red-700 transition hover:bg-red-200">
         Bandyti dar kartą
       </button>
     </div>
 
     <!-- ═══ RESULTS ═══ -->
     <div v-else>
-      <!-- Summary bar -->
-      <div class="mb-4 flex items-center justify-between">
-        <div class="flex items-center gap-2 text-sm">
-          <span class="text-lg font-bold text-gray-900 tabular-nums">{{ totalMatchingCourts }}</span>
-          <span class="text-gray-400">{{ totalMatchingCourts === 1 ? 'kortas' : 'kortai' }} su laisvomis vietomis</span>
-          <span v-if="filterStart" class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-            {{ filterStart }}{{ filterEnd ? ' – ' + filterEnd : '+' }}
-          </span>
-          <span v-if="filterType" :class="['rounded-full px-2 py-0.5 text-[11px] font-medium',
-            filterType === 'doubles' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600']">
-            {{ filterType === 'doubles' ? '2v2' : '1v1' }}
-          </span>
-        </div>
-        <button @click="refresh()" title="Atnaujinti"
-          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
-          <svg :class="['h-3.5 w-3.5 transition-transform', refreshing ? 'animate-spin' : '']"
-            fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <p class="text-sm text-gray-600">
+          <b class="text-gray-900 tabular-nums">{{ bookableVenues.length }} {{ ltPlural(bookableVenues.length, 'vieta', 'vietos', 'vietų') }}</b>
+          turi laisvą {{ duration }} min{{ fromTime ? ` nuo ${fromTime}` : '' }}
+        </p>
+        <button type="button" @click="refresh()" aria-label="Atnaujinti"
+          class="flex h-11 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-xs text-gray-500 transition hover:bg-gray-100 hover:text-gray-700">
+          <svg :class="['h-4 w-4', refreshing ? 'animate-spin' : '']" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
-          <span v-if="data?.fromCache" class="hidden sm:inline tabular-nums">{{ data.cacheAgeSeconds }}s</span>
+          <span v-if="data" class="tabular-nums">{{ formatTime(data.fetchedAt) }}</span>
         </button>
       </div>
 
-      <!-- Venue cards -->
-      <div class="space-y-4">
-        <article v-for="(venue, vIdx) in filteredVenues" :key="venue.id"
-          class="venue-card overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md"
-          :style="{ animationDelay: `${vIdx * 60}ms` }">
-
-          <!-- Venue header -->
-          <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-5"
-            :style="{ borderLeftWidth: '4px', borderLeftColor: venueAccentColor(venue.id) }">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <h3 class="font-semibold text-gray-900 truncate">{{ venue.name }}</h3>
-                <span v-if="venue.error"
-                  class="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-500">Klaida</span>
-              </div>
-              <p class="mt-0.5 text-xs text-gray-400 truncate">{{ venue.address }}</p>
-            </div>
-            <div class="flex items-center gap-3 shrink-0">
-              <div class="hidden sm:flex flex-col items-end">
-                <span class="text-sm font-bold tabular-nums text-gray-900">{{ venueFreeCount(venue) }}</span>
-                <span class="text-[10px] text-gray-400 leading-tight">laisvi</span>
-              </div>
-              <a :href="venue.bookingUrl" target="_blank" rel="noopener"
-                class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md active:scale-[0.97]">
-                Rezervuoti
-                <svg class="h-3 w-3 -mr-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
-                </svg>
-              </a>
-            </div>
-          </div>
-
-          <!-- Courts -->
-          <div v-if="filteredCourts(venue).length > 0" class="divide-y divide-gray-50">
-            <div v-for="court in filteredCourts(venue)" :key="court.id" class="px-4 py-3 sm:px-5">
-              <div class="mb-2 flex items-center gap-2">
-                <span class="text-sm font-medium text-gray-700">{{ court.name }}</span>
-                <span :class="['rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                  court.type === 'singles' ? 'bg-purple-50 text-purple-500' : 'bg-blue-50 text-blue-500']">
-                  {{ court.type === 'singles' ? '1v1' : '2v2' }}
-                </span>
-                <span class="ml-auto text-xs tabular-nums text-gray-400">{{ courtFreeCount(court) }} laisvi</span>
-              </div>
-
-              <!-- Time slots -->
-              <div class="flex flex-wrap gap-[3px]">
-                <div v-for="(slot, si) in court.slots" :key="slot.time"
-                  @click="slot.available ? selectSlot(slot.time) : undefined"
-                  :class="[
-                    'relative flex flex-col items-center justify-center rounded-lg min-w-[2.75rem] px-1 py-1.5 text-[11px] leading-tight transition-all duration-150 select-none',
-                    si > 0 && slot.time.endsWith(':00') ? 'ml-0.5' : '',
-                    slot.available
-                      ? (slot.time === filterStart || slot.time === filterEnd
-                          ? 'bg-emerald-600 text-white ring-2 ring-emerald-400 ring-offset-1 cursor-pointer scale-105 shadow-sm'
-                          : isInRange(slot.time)
-                            ? 'bg-emerald-500 text-white cursor-pointer'
-                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer border border-emerald-200/60')
-                      : 'bg-gray-50 text-gray-300 cursor-default'
-                  ]"
-                  :title="slot.available
-                    ? (slot.price ? `${slot.time} — €${slot.price}/30min` : slot.time)
-                    : `Užimta ${slot.time}`">
-                  <!-- Now indicator dot -->
-                  <div v-if="isToday && isNowSlot(slot.time, si, court.slots)"
-                    class="absolute -top-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"></div>
-                  <span class="font-semibold tabular-nums">{{ slot.time }}</span>
-                  <span v-if="slot.available && slot.price"
-                    class="text-[9px] font-medium"
-                    :class="(slot.time === filterStart || slot.time === filterEnd || isInRange(slot.time)) ? 'text-white/80' : 'text-emerald-500'">
-                    €{{ slot.price }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- No matching courts -->
-          <div v-else class="px-5 py-10 text-center">
-            <p class="text-sm text-gray-400">{{ venue.error || 'Nėra atitinkančių kortų' }}</p>
-          </div>
-        </article>
+      <div class="space-y-3">
+        <VenueCard v-for="(v, vIdx) in venueViews" :key="v.venue.id"
+          class="venue-card" :style="{ animationDelay: `${vIdx * 50}ms` }"
+          :venue="v.venue" :courts="v.courts" :sessions="v.sessions" :strip="v.strip"
+          :duration="duration" :expanded="expanded.has(v.venue.id)"
+          @toggle="toggleVenue(v.venue.id)"
+          @pick="time => openSession(v.venue.id, time)" />
       </div>
 
       <!-- No results at all -->
-      <div v-if="filteredVenues.length === 0" class="py-20 text-center">
-        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-          <svg class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
-        </div>
-        <p class="text-gray-500 font-medium">
-          <span v-if="selectedCity && selectedCity !== 'Kaunas' && selectedCity !== 'Vilnius' && selectedCity !== 'Klaipėda'">
-            {{ selectedCity }} mieste kortų duomenys kol kas neprieinami 🚧
-          </span>
-          <span v-else>Nėra laisvų kortų pagal pasirinktus filtrus</span>
+      <div v-if="venueViews.length === 0" class="py-16 text-center">
+        <p class="font-medium text-gray-600">
+          <template v-if="selectedCity && !ACTIVE_CITIES.has(selectedCity)">
+            {{ selectedCity }} mieste kortų duomenys kol kas neprieinami
+          </template>
+          <template v-else>Nėra laisvų {{ duration }} min laikų pagal pasirinktus filtrus</template>
         </p>
-        <button @click="clearFilters"
-          class="mt-3 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 transition">
-          Išvalyti filtrus
-        </button>
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
+          <button v-if="duration !== DURATIONS[0]" type="button" @click="duration = DURATIONS[0]"
+            class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+            Bandyti {{ DURATIONS[0] }} min
+          </button>
+          <button type="button" @click="clearFilters"
+            class="min-h-[44px] rounded-xl border border-gray-200 bg-white px-4 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50">
+            Išvalyti filtrus
+          </button>
+        </div>
       </div>
 
       <!-- Ad unit — shown after users have seen the value -->
@@ -306,24 +172,105 @@
       </div>
 
       <!-- Data freshness indicator -->
-      <div v-if="data" class="mt-6 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-        <span v-if="data.fromCache" class="flex items-center gap-1">
-          Talpykla · prieš {{ data.cacheAgeSeconds }}s
-        </span>
-        <span v-else class="flex items-center gap-1 text-emerald-500 font-medium">
-          ✓ Atnaujinta
-        </span>
-        <span>·</span>
-        <span>{{ formatTime(data.fetchedAt) }}</span>
-      </div>
+      <p v-if="data" class="mt-6 text-center text-[11px] text-gray-500">
+        {{ data.fromCache ? `Talpykla · prieš ${data.cacheAgeSeconds}s` : 'Atnaujinta' }} · {{ formatTime(data.fetchedAt) }}
+      </p>
     </div>
+
+    <!-- ═══ SESSION SHEET ═══ -->
+    <BottomSheet :open="!!sheet" :title="sheet ? `${sheet.venue.name}, ${sheet.start.time}` : ''" @close="sheetKey = null">
+      <template v-if="sheet" #header>
+        <p class="text-[13px] text-gray-600">{{ sheet.venue.name }} · {{ selectedDayLabel }}</p>
+        <h2 class="text-[26px] font-bold tabular-nums text-gray-900">{{ sheet.start.time }} – {{ sessionEnd(sheet.start.time, duration) }}</h2>
+        <p class="text-sm text-gray-600">
+          {{ duration }} min · {{ sheet.start.courts.length }} {{ ltPlural(sheet.start.courts.length, 'laisvas kortas', 'laisvi kortai', 'laisvų kortų') }}
+        </p>
+      </template>
+      <template v-if="sheet">
+        <ul class="space-y-2.5">
+          <li v-for="c in sheet.start.courts" :key="c.court.id"
+            class="flex items-center gap-3 rounded-2xl border border-gray-200 px-3.5 py-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="truncate text-[15px] font-semibold text-gray-900">{{ c.court.name }}</span>
+                <span :class="['shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                  c.court.type === 'singles' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700']">
+                  {{ c.court.type === 'singles' ? '1v1' : '2v2' }}
+                </span>
+              </div>
+              <span v-if="c.court.indoor !== undefined" class="text-[13px] text-gray-600">{{ c.court.indoor ? 'Vidaus' : 'Lauko' }}</span>
+            </div>
+            <span v-if="c.price !== null" class="text-[17px] font-bold tabular-nums text-gray-900">{{ formatPrice(c.price) }}</span>
+            <a :href="sheet.venue.bookingUrl" target="_blank" rel="noopener"
+              class="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.97]">
+              Rezervuoti
+              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+              </svg>
+            </a>
+          </li>
+        </ul>
+        <p class="mt-4 text-xs leading-relaxed text-gray-600">
+          Rezervacija vyksta klubo svetainėje. Kaina už visą {{ duration }} min laiką pagal klubo kainoraštį ir gali skirtis.
+        </p>
+        <div v-if="sheet.others.length" class="mt-4">
+          <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Kiti laikai</p>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button v-for="s in sheet.others" :key="s.time" type="button"
+              class="h-11 rounded-xl border border-gray-300 bg-white text-sm tabular-nums text-gray-800 transition hover:border-emerald-300"
+              @click="openSession(sheet.venue.id, s.time)">
+              {{ s.time }}
+            </button>
+          </div>
+        </div>
+      </template>
+    </BottomSheet>
+
+    <!-- ═══ FILTER SHEET ═══ -->
+    <BottomSheet :open="filtersOpen" title="Filtrai" @close="filtersOpen = false">
+      <fieldset class="mb-5">
+        <legend class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Kortas</legend>
+        <div class="grid grid-cols-3 overflow-hidden rounded-xl border border-gray-300">
+          <button v-for="o in TYPE_OPTIONS" :key="String(o.value)" type="button" :aria-pressed="filterType === o.value"
+            @click="filterType = o.value"
+            :class="['h-11 text-sm', filterType === o.value ? 'bg-emerald-600 font-semibold text-white' : 'bg-white text-gray-700 hover:bg-gray-50']">
+            {{ o.label }}
+          </button>
+        </div>
+      </fieldset>
+      <fieldset class="mb-6">
+        <legend class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Vieta</legend>
+        <div class="grid grid-cols-3 overflow-hidden rounded-xl border border-gray-300">
+          <button v-for="o in INDOOR_OPTIONS" :key="String(o.value)" type="button" :aria-pressed="filterIndoor === o.value"
+            @click="filterIndoor = o.value"
+            :class="['h-11 text-sm', filterIndoor === o.value ? 'bg-emerald-600 font-semibold text-white' : 'bg-white text-gray-700 hover:bg-gray-50']">
+            {{ o.label }}
+          </button>
+        </div>
+      </fieldset>
+      <div class="flex gap-2">
+        <button type="button" @click="clearFilters"
+          class="h-12 rounded-xl border border-gray-300 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+          Išvalyti
+        </button>
+        <button type="button" @click="filtersOpen = false"
+          class="h-12 flex-1 rounded-xl bg-emerald-600 text-[15px] font-semibold text-white hover:bg-emerald-700">
+          Rodyti {{ bookableVenues.length }} {{ ltPlural(bookableVenues.length, 'vietą', 'vietas', 'vietų') }}
+        </button>
+      </div>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { AvailabilityResponse, Venue, Court, City } from '~~/server/utils/types'
 import { CITIES, CITY_COORDS } from '~~/server/utils/types'
-import { ACTIVE_CITIES, venueInfo } from '~~/server/utils/venues'
+import { ACTIVE_CITIES } from '~~/server/utils/venues'
+import { currentMinutesFor } from '~~/server/utils/time'
+import {
+  DEFAULT_DURATION, DURATIONS, byDayTime, dayMinutes, dayStrip, formatPrice, isDuration, ltPlural, sessionEnd, venueSessions,
+  type Duration,
+} from '~/utils/sessions'
 
 const LT_TZ = 'Europe/Vilnius'
 
@@ -346,28 +293,72 @@ function ltDateOffset(offsetDays: number): { dateStr: string; dayOfWeek: number;
   }
 }
 
+// ── Remembered preferences (cookie, so SSR renders the same choices) ──
+type CourtType = 'doubles' | 'singles'
+interface Prefs { city: City | null; duration: Duration; type: CourtType | null; indoor: boolean | null }
+const DEFAULT_PREFS: Prefs = { city: 'Kaunas', duration: DEFAULT_DURATION, type: null, indoor: null }
+
+const prefsCookie = useCookie<Partial<Prefs>>('zp-prefs', {
+  default: () => ({ ...DEFAULT_PREFS }),
+  maxAge: 60 * 60 * 24 * 365,
+  sameSite: 'lax',
+})
+
+/** Validated view of the cookie: anything unexpected falls back to the default */
+const prefs = computed<Prefs>(() => {
+  const p = prefsCookie.value ?? {}
+  return {
+    city: p.city === null || CITIES.includes(p.city as City) ? (p.city ?? null) : DEFAULT_PREFS.city,
+    duration: isDuration(p.duration) ? p.duration : DEFAULT_PREFS.duration,
+    type: p.type === 'doubles' || p.type === 'singles' ? p.type : null,
+    indoor: typeof p.indoor === 'boolean' ? p.indoor : null,
+  }
+})
+
+function pref<K extends keyof Prefs>(key: K) {
+  return computed<Prefs[K]>({
+    get: () => prefs.value[key],
+    set: (v) => { prefsCookie.value = { ...prefs.value, [key]: v } },
+  })
+}
+
+const selectedCity = pref('city')
+const duration = pref('duration')
+const filterType = pref('type')
+const filterIndoor = pref('indoor')
+
+const TYPE_OPTIONS: { value: CourtType | null; label: string }[] = [
+  { value: null, label: 'Visi' }, { value: 'doubles', label: '2v2' }, { value: 'singles', label: '1v1' },
+]
+const INDOOR_OPTIONS: { value: boolean | null; label: string }[] = [
+  { value: null, label: 'Visi' }, { value: true, label: 'Vidaus' }, { value: false, label: 'Lauko' },
+]
+
 const today = todayLT()
 /** Matches MAX_DAYS_AHEAD in server/api/availability.get.ts */
 const maxDate = ltDateOffset(180).dateStr
 const selectedDate = ref(today)
-const activeVenue = ref<string | null>(null)
-const filterStart = ref<string>('')
-const filterEnd = ref<string>('')
-const filterType = ref<'doubles' | 'singles' | null>(null)
-const filterIndoor = ref<boolean | null>(null)
-const selectedCity = ref<City | null>('Kaunas')
+const fromTime = ref('')
+const filtersOpen = ref(false)
+const expanded = ref(new Set<string>())
+/** The session whose sheet is open */
+const sheetKey = ref<{ venueId: string; time: string } | null>(null)
 const gpsState = ref<'idle' | 'loading' | 'done' | 'error'>('idle')
 const refreshing = ref(false)
 
-// Initialize AdSense ad units after mount
+// Re-evaluated every minute so today's past start times drop off while the page stays open
+const nowTick = ref(Date.now())
+let tickTimer: ReturnType<typeof setInterval> | undefined
+
 onMounted(() => {
+  tickTimer = setInterval(() => { nowTick.value = Date.now() }, 60_000)
+  // Initialize AdSense ad units after mount
   try {
     const w = window as any
     ;(w.adsbygoogle = w.adsbygoogle || []).push({})
   } catch {}
 })
-
-const isToday = computed(() => selectedDate.value === today)
+onBeforeUnmount(() => clearInterval(tickTimer))
 
 // 7-day quick navigation pills
 const LT_DAYS = ['Sek', 'Pir', 'Ant', 'Tre', 'Ket', 'Pen', 'Šeš']
@@ -384,9 +375,12 @@ const isCustomDate = computed(() =>
   !quickDays.value.some(d => d.date === selectedDate.value)
 )
 
-// Reset end when start changes
-watch(filterStart, () => { filterEnd.value = '' })
-watch(selectedCity, () => { activeVenue.value = null })
+const selectedDayLabel = computed(() =>
+  quickDays.value.find(d => d.date === selectedDate.value)?.label ?? selectedDate.value
+)
+
+watch(selectedDate, () => { expanded.value = new Set(); sheetKey.value = null })
+watch(selectedCity, () => { expanded.value = new Set() })
 
 const { data, pending, error, refresh: rawRefresh } = useFetch<AvailabilityResponse>('/api/availability', {
   query: { date: selectedDate },
@@ -400,10 +394,6 @@ async function refresh() {
 
 const venues = computed(() => data.value?.venues || [])
 
-const cityVenues = computed(() =>
-  selectedCity.value ? venues.value.filter(v => v.city === selectedCity.value) : venues.value
-)
-
 // All possible 30-min times across all venues
 const allTimeSlots = computed(() => {
   const times = new Set<string>()
@@ -411,96 +401,70 @@ const allTimeSlots = computed(() => {
     for (const court of venue.courts)
       for (const slot of court.slots)
         times.add(slot.time)
-  return Array.from(times).sort()
+  return Array.from(times).sort(byDayTime)
 })
 
-const endTimeSlots = computed(() => {
-  if (!filterStart.value) return allTimeSlots.value
-  return allTimeSlots.value.filter(t => t > filterStart.value)
-})
+/** Minutes since midnight now if the selected date is today, else -1 */
+const nowMinutes = computed(() => currentMinutesFor(selectedDate.value, new Date(nowTick.value)))
 
-const rangeSlots = computed<Set<string>>(() => {
-  if (!filterStart.value) return new Set()
-  const slots = allTimeSlots.value
-  if (!filterEnd.value) return new Set([filterStart.value])
-  return new Set(slots.filter(t => t >= filterStart.value && t <= filterEnd.value))
-})
+/** Earliest allowed session start: the later of "now" and the chosen "nuo" time */
+const earliestMinutes = computed(() =>
+  Math.max(nowMinutes.value, fromTime.value ? dayMinutes(fromTime.value) : 0)
+)
 
-function isInRange(time: string): boolean {
-  return rangeSlots.value.has(time)
-}
-
-// "Now" indicator — returns true for the slot spanning the current time
-function isNowSlot(time: string, index: number, slots: { time: string }[]): boolean {
-  const now = new Date()
-  const hh = String(now.getHours()).padStart(2, '0')
-  const mm = String(now.getMinutes()).padStart(2, '0')
-  const nowStr = `${hh}:${mm}`
-  if (nowStr < time) return false
-  const nextTime = slots[index + 1]?.time ?? '24:00'
-  return nowStr < nextTime
-}
-
-function selectSlot(time: string) {
-  if (!filterStart.value) {
-    filterStart.value = time
-    filterEnd.value = ''
-  } else if (!filterEnd.value) {
-    if (time === filterStart.value) {
-      filterStart.value = ''
-    } else if (time > filterStart.value) {
-      filterEnd.value = time
-    } else {
-      filterStart.value = time
-    }
-  } else {
-    filterStart.value = time
-    filterEnd.value = ''
-  }
-}
-
-function filteredCourts(venue: Venue): Court[] {
+function matchingCourts(venue: Venue): Court[] {
   return venue.courts.filter(court => {
     if (filterType.value && court.type !== filterType.value) return false
     if (filterIndoor.value !== null && court.indoor !== undefined && court.indoor !== filterIndoor.value) return false
-    if (filterStart.value) {
-      const range = rangeSlots.value
-      return Array.from(range).every(t => court.slots.some(s => s.time === t && s.available))
-    }
-    return court.slots.some(s => s.available)
+    return true
   })
 }
 
-const filteredVenues = computed(() => {
-  return venues.value.filter(v => {
-    if (selectedCity.value && v.city !== selectedCity.value) return false
-    if (activeVenue.value && v.id !== activeVenue.value) return false
-    return filteredCourts(v).length > 0 || v.error
-  })
-})
-
-const totalMatchingCourts = computed(() =>
-  filteredVenues.value.reduce((sum, v) => sum + filteredCourts(v).length, 0)
+const venueViews = computed(() =>
+  venues.value
+    .filter(v => !selectedCity.value || v.city === selectedCity.value)
+    .map(venue => {
+      const courts = matchingCourts(venue)
+      return {
+        venue,
+        courts,
+        sessions: venueSessions(courts, duration.value, earliestMinutes.value),
+        strip: dayStrip(courts, nowMinutes.value),
+      }
+    })
+    .filter(v => v.sessions.starts.length > 0 || v.venue.error)
 )
 
-function venueFreeCount(venue: Venue): number {
-  return filteredCourts(venue).reduce((sum, c) => sum + courtFreeCount(c), 0)
+const bookableVenues = computed(() => venueViews.value.filter(v => v.sessions.starts.length > 0))
+
+const extraFilterCount = computed(() => (filterType.value ? 1 : 0) + (filterIndoor.value !== null ? 1 : 0))
+
+function toggleVenue(id: string) {
+  const next = new Set(expanded.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expanded.value = next
 }
 
-function courtFreeCount(court: Court): number {
-  if (filterStart.value) {
-    const range = rangeSlots.value
-    return Array.from(range).filter(t => court.slots.some(s => s.time === t && s.available)).length
-  }
-  return court.slots.filter(s => s.available).length
+// ── Session sheet ──
+function openSession(venueId: string, time: string) {
+  sheetKey.value = { venueId, time }
 }
+
+/** Resolved from live data, so it closes itself if a refresh removes the session */
+const sheet = computed(() => {
+  const key = sheetKey.value
+  if (!key) return null
+  const view = venueViews.value.find(v => v.venue.id === key.venueId)
+  const start = view?.sessions.starts.find(s => s.time === key.time)
+  if (!view || !start) return null
+  const others = view.sessions.starts.filter(s => s.time !== key.time).slice(0, 8)
+  return { venue: view.venue, start, others }
+})
 
 function clearFilters() {
-  filterStart.value = ''
-  filterEnd.value = ''
-  filterType.value = null
-  filterIndoor.value = null
-  activeVenue.value = null
+  fromTime.value = ''
+  prefsCookie.value = { ...prefs.value, type: null, indoor: null }
 }
 
 function detectCity() {
@@ -521,21 +485,6 @@ function detectCity() {
     () => { gpsState.value = 'error' },
     { timeout: 8000 }
   )
-}
-
-// Accent colour per venue comes from the registry (server/utils/venues.ts)
-function venueAccentColor(id: string): string {
-  return venueInfo(id)?.color ?? '#9ca3af'
-}
-
-/** Active venue pill: tinted background, accent border, darkened accent text */
-function activePillStyle(id: string) {
-  const color = venueAccentColor(id)
-  return {
-    borderColor: color,
-    backgroundColor: `color-mix(in srgb, ${color} 10%, white)`,
-    color: `color-mix(in srgb, ${color} 65%, black)`,
-  }
 }
 
 function formatTime(iso: string) {
