@@ -293,6 +293,8 @@ onBeforeUnmount(() => clearInterval(tickTimer))
 const today = computed(() => todayLT(new Date(nowTick.value)))
 const maxDate = computed(() => addDays(today.value, MAX_DAYS_AHEAD))
 const selectedDate = ref(todayLT())
+// Page left open past midnight: if "today" was selected, follow it to the new day
+watch(today, (now, before) => { if (selectedDate.value === before) selectedDate.value = now })
 const fromTime = ref('')
 const filtersOpen = ref(false)
 const expanded = ref(new Set<string>())

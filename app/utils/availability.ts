@@ -1,5 +1,5 @@
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
-import { CITY_COORDS, type City, type Court, type Venue } from '../../server/utils/types'
+import { CITY_COORDS, type City, type Court, type CourtKind, type Venue } from '../../server/utils/types'
 import { byDayTime, dayMinutes, hasSlotStarted } from '../../server/utils/time'
 import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueSessions } from './sessions'
 
@@ -9,7 +9,7 @@ import { dayStrip, venueSessions, type SessionStart, type StripCell, type VenueS
  * only binds the result.
  */
 
-export type CourtKind = 'doubles' | 'singles'
+export type { CourtKind }
 
 /** A court's type for display and filtering; an unknown type counts as doubles, the common case. */
 export function courtKind(court: Court): CourtKind {
@@ -44,7 +44,7 @@ export interface AvailabilityView {
   /** Venues with at least one session, plus venues that failed to load (shown with their error) */
   venues: VenueView[]
   bookableCount: number
-  /** Choices for the "nuo" picker: every not-yet-started slot time in the selected city */
+  /** Choices for the "nuo" picker: every not-yet-started slot time on matching courts in the selected city */
   startTimeOptions: string[]
 }
 
@@ -53,21 +53,20 @@ export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMi
   const inCity = venues.filter(v => !f.city || v.city === f.city)
   const earliest = Math.max(currentMinutes, f.fromTime ? dayMinutes(f.fromTime) : 0)
 
-  const views = inCity
-    .map(venue => {
-      const courts = venue.courts.filter(c => courtMatches(c, f))
-      return {
-        venue,
-        courts,
-        sessions: venueSessions(courts, f.duration, earliest),
-        strip: dayStrip(courts, currentMinutes),
-      }
-    })
-    .filter(v => v.sessions.starts.length > 0 || v.venue.error)
+  const all: VenueView[] = inCity.map(venue => {
+    const courts = venue.courts.filter(c => courtMatches(c, f))
+    return {
+      venue,
+      courts,
+      sessions: venueSessions(courts, f.duration, earliest),
+      strip: dayStrip(courts, currentMinutes),
+    }
+  })
+  const views = all.filter(v => v.sessions.starts.length > 0 || v.venue.error)
 
   const times = new Set<string>()
-  for (const venue of inCity)
-    for (const court of venue.courts)
+  for (const { courts } of all)
+    for (const court of courts)
       for (const slot of court.slots)
         if (!hasSlotStarted(slot.time, currentMinutes)) times.add(slot.time)
 

@@ -43,3 +43,6 @@ export interface AvailabilityResponse {
   fromCache: boolean
   cacheAgeSeconds: number | null
 }
+
+/** A court's type for display and filtering; 'unknown' counts as doubles (see courtKind in app/utils/availability.ts) */
+export type CourtKind = Exclude<Court['type'], 'unknown'>

@@ -54,6 +54,13 @@ describe('buildAvailabilityView', () => {
     expect(view.startTimeOptions).toEqual(['19:00', '19:30'])
   })
 
+  it('offers start picker times only from courts that pass the filters', () => {
+    const view = buildAvailabilityView([kaunas], { ...ANY, type: 'singles' }, NOT_TODAY)
+    expect(view.startTimeOptions).toEqual(['18:00', '18:30', '19:00', '19:30'])
+    const mixed = venue('m', 'Kaunas', [court('m1', '11', '18:00'), court('m2', '11', '20:00', 10, { type: 'singles' })])
+    expect(buildAvailabilityView([mixed], { ...ANY, type: 'singles' }, NOT_TODAY).startTimeOptions).toEqual(['20:00', '20:30'])
+  })
+
   it('orders start picker times evening-first across midnight', () => {
     const late = venue('l', 'Kaunas', [court('l1', '1111', '23:00')])
     expect(buildAvailabilityView([late], ANY, NOT_TODAY).startTimeOptions).toEqual(['23:00', '23:30', '00:00', '00:30'])

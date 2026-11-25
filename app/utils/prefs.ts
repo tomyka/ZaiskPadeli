@@ -1,6 +1,5 @@
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
-import { CITIES, type City } from '../../server/utils/types'
-import type { CourtKind } from './availability'
+import { CITIES, type City, type CourtKind } from '../../server/utils/types'
 
 /**
  * The visitor's remembered choices. Stored in a cookie the visitor controls,

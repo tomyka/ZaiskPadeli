@@ -1,7 +1,8 @@
 import { kv } from '@vercel/kv'
 import type { AvailabilityResponse } from './types'
 
-const KV_PREFIX = 'avail'
+// Bump the version when cached data's shape or guarantees change (v2: slots in venue-day order)
+const KV_PREFIX = 'avail:v2'
 const FRESH_TTL_SEC = 5 * 60         // 5 min — considered "fresh"
 const STALE_TTL_SEC = 60 * 60        // 60 min — stale but servable as fallback
 const KV_STORE_TTL_SEC = STALE_TTL_SEC + 60 // stored slightly longer than stale window

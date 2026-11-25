@@ -1,6 +1,6 @@
 // Relative imports (not ~~/) so vitest can load this file without Nuxt's aliases
 import type { Court } from '../../server/utils/types'
-import { SLOT_MIN, dayMinutes, fromMinutes, hasSlotStarted, toMinutes } from '../../server/utils/time'
+import { SLOT_MIN, byDayTime, dayMinutes, fromMinutes, hasSlotStarted, toMinutes } from '../../server/utils/time'
 
 /**
  * Bookable sessions: a start time where a court has enough back-to-back free
@@ -79,7 +79,7 @@ export function venueSessions(courts: Court[], durationMin: number, earliestMin 
   }
   // Map keeps insertion order, which is per court; re-merge into venue-day order
   const starts = [...byTime]
-    .sort(([a], [b]) => dayMinutes(a) - dayMinutes(b))
+    .sort(([a], [b]) => byDayTime(a, b))
     .map(([time, list]) => ({ time, courts: list, minPrice: minPriceOf(list.map(c => c.price)) }))
   return { perCourt, starts, minPrice: minPriceOf(starts.map(s => s.minPrice)) }
 }
@@ -94,7 +94,7 @@ export function dayStrip(courts: Court[], currentMinutes: number): StripCell[] {
     for (const s of court.slots)
       free.set(s.time, (free.get(s.time) ?? false) || s.available)
   return [...free]
-    .sort(([a], [b]) => dayMinutes(a) - dayMinutes(b))
+    .sort(([a], [b]) => byDayTime(a, b))
     .map(([time, isFree]) => ({
       time,
       state: hasSlotStarted(time, currentMinutes) ? 'past' : isFree ? 'free' : 'busy',
