@@ -1,6 +1,6 @@
 import { kv } from '@vercel/kv'
 import { scrapeAllVenues } from './scraper-all'
-import type { AvailabilityResponse, Venue } from './types'
+import { hasNoCourtData, type AvailabilityResponse, type Venue } from './types'
 
 /**
  * The availability store: the one place that decides when a date's availability is
@@ -60,8 +60,8 @@ export function createAvailabilityStore(deps: {
   /** Stored entry if still within the stale window */
   async function read(date: string): Promise<StoredAvailability | null> {
     const entry = await storage.get(key(date))
-    if (!entry || now() - entry.storedAt > STALE_SEC * 1000) return null
-    return entry
+    if (!entry || !Array.isArray(entry.venues) || !Number.isFinite(entry.storedAt)) return null
+    return now() - entry.storedAt > STALE_SEC * 1000 ? null : entry
   }
 
   async function scrapeAndStore(date: string): Promise<RefreshResult> {
@@ -116,7 +116,7 @@ function carryOverFailedVenues(
   const venues = fresh.map((venue): Venue => {
     if (venue.status !== 'failed') return venue
     const prev = prevById.get(venue.id)
-    if (!prev || (prev.status !== 'ok' && prev.status !== 'stale') || prev.courts.length === 0) return venue
+    if (!prev || hasNoCourtData(prev.status) || prev.courts.length === 0) return venue
     const age = now - Date.parse(prev.lastUpdated)
     if (!Number.isFinite(age) || age > STALE_SEC * 1000) return venue
 

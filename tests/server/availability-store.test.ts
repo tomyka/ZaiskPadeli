@@ -104,6 +104,15 @@ describe('availability store', () => {
     expect(data.venues.map(v => v.status)).toEqual(['empty', 'failed'])
   })
 
+  it('treats a malformed stored entry as a miss', async () => {
+    const storage = memoryAvailabilityStorage()
+    await storage.set('avail:v5:' + DATE, { storedAt: Number.NaN } as never, 60)
+    const scrape = vi.fn(async () => [good('a', 0)])
+    const store = createAvailabilityStore({ storage, scrape })
+    expect((await store.get(DATE)).fromCache).toBe(false)
+    expect(scrape).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores stored data past the stale window', async () => {
     const { store, advance, scrapeReturns } = setup()
     await store.get(DATE)

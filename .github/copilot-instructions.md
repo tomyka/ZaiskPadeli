@@ -28,7 +28,7 @@ server/
   utils/
     types.ts                 # shared TypeScript interfaces (Court, Venue, TimeSlot, ScrapeReport, etc.)
     regions.ts               # counties + municipalities (pure data); venues record a municipality, the county is derived; the visitor's selection (and its invariant) lives in app/utils/location.ts
-    cache.ts                 # Vercel KV cache (in-memory fallback for local dev)
+    availability-store.ts    # get(date) / refresh(date): freshness, per-venue carry-over, dedupe; storage seam (KV adapter, in-memory adapter)
     time.ts                  # Lithuanian timezone utilities — always use these
     venues.ts                # VENUE REGISTRY — single source of venue metadata (pure data, also imported by the client)
     scraper-all.ts           # binds each venue id to a scraper (SCRAPERS) + runner (Venue shell, deadline, error handling)
@@ -36,6 +36,11 @@ server/
     ntennis-fetch.ts         # nTennis guest-login + grid fetch — RUNTIME-AGNOSTIC: also bundled into cf-proxy (web APIs only, no cheerio/Nitro auto-imports)
     parse.ts                 # small pure HTML helpers: parseEuro, parseBgColor, expandHourHeader
     scraper-*.ts             # one file per venue / platform; each returns Court[]
+app/utils/
+  location.ts                # the visitor's Location (county + optional municipality), its moves and filter choices
+  availability.ts            # buildAvailabilityView: what the page shows for the filters (pure)
+  venue-status.ts            # venue status → Lithuanian wording
+  prefs.ts                   # cookie prefs parsing (incl. migration of old { city } cookies)
 ```
 
 ### Request flow
@@ -113,7 +118,7 @@ The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. A
 
 ### UI filter state (index.vue)
 
-Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional municipality, changed only through its moves `chooseCounty`, `chooseMunicipality`, `locateAt`), `selectedDate`, `filterStart`, `filterEnd`, `filterType`, `filterIndoor`, `activeVenue`. The computed `filteredCourts(venue)` applies all active filters. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
+Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional municipality, changed only through its moves `chooseCounty`, `chooseMunicipality`, `locateAt`), `selectedDate`, `fromTime`, `duration`, `filterType`, `filterIndoor`, `selectedKey` (the open session). The computed `view` = `buildAvailabilityView(venues, filters, now)` applies all of them; the page only binds it. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
 
 ### Deployment
 

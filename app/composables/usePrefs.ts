@@ -1,5 +1,5 @@
 import { DEFAULT_PREFS, parsePrefs, type Prefs } from '~/utils/prefs'
-import type { Location } from '~/utils/location'
+import { toLocation, type Location } from '~/utils/location'
 
 /**
  * Remembered preferences as writable refs, backed by a cookie so the server
@@ -21,10 +21,10 @@ export function usePrefs() {
   }
 
   return {
-    /** Set it only to Locations from the location module (its moves keep the county/municipality invariant) */
+    /** Where the visitor is looking; any value written is normalised (see app/utils/location.ts) */
     location: computed<Location>({
       get: () => ({ county: prefs.value.county, municipality: prefs.value.municipality }),
-      set: (loc) => { cookie.value = { ...prefs.value, county: loc.county, municipality: loc.municipality } },
+      set: (loc) => { cookie.value = { ...prefs.value, ...toLocation(loc.county, loc.municipality) } },
     }),
     duration: field('duration'),
     type: field('type'),

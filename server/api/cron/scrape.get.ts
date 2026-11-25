@@ -1,6 +1,6 @@
 import { useAvailabilityStore } from '../../utils/availability-store'
 import { nextDatesLT } from '../../utils/time'
-import type { ScrapeReport } from '../../utils/types'
+import { hasNoCourtData, type ScrapeReport } from '../../utils/types'
 
 /**
  * Cron endpoint: pre-scrapes today + the next 2 days and stores them in KV.
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   for (const date of dates) {
     const start = Date.now()
     const { data, carried } = await useAvailabilityStore().refresh(date)
-    const failed = data.venues.filter(v => v.status === 'failed' || v.status === 'empty').map(v => v.id)
+    const failed = data.venues.filter(v => hasNoCourtData(v.status)).map(v => v.id)
     results[date] = { venues: data.venues.length, errors: failed.length, failed, carried, ms: Date.now() - start }
   }
 

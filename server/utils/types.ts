@@ -23,6 +23,11 @@ export interface Court {
  */
 export type VenueStatus = 'ok' | 'empty' | 'failed' | 'stale'
 
+/** No courts to show: the scrape failed with nothing to fall back on, or the venue has no courts that day */
+export function hasNoCourtData(status: VenueStatus): status is 'empty' | 'failed' {
+  return status === 'empty' || status === 'failed'
+}
+
 export interface Venue {
   id: string          // "padelhub", "tennisspace", "padelhouse", "kaunopadelis"
   name: string        // "Balcia Padel Hub"

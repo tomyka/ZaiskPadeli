@@ -308,7 +308,7 @@ const selectedDayLabel = computed(() =>
 )
 
 watch(selectedDate, () => { expanded.value = new Set(); selectedKey.value = null })
-watch(() => [location.value.county, location.value.municipality], () => { expanded.value = new Set() })
+watch([() => location.value.county, () => location.value.municipality], () => { expanded.value = new Set() })
 
 /** The county select's model; picking a county goes through the location module */
 const county = computed({

@@ -59,7 +59,7 @@ describe('runScraper', () => {
     expect(scrape).toHaveBeenCalledWith('2026-11-25', info)
   })
 
-  it('turns a thrown error into a user-facing error, without throwing', async () => {
+  it('records a thrown error as status failed, without throwing', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const venue = await runScraper(info, async () => { throw new Error('boom') }, '2026-11-25')
     expect(venue.status).toBe('failed')

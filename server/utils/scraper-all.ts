@@ -15,7 +15,7 @@ import { wineroScraper } from './scraper-winero'
 
 /**
  * A scraper fetches one venue's courts for a date.
- * It throws on any failure; the runner below turns that into `venue.error`.
+ * It throws on any failure; the runner below records that as `status: 'failed'`.
  * Courts may omit `indoor`; the registry default is applied.
  */
 export type Scraper = (date: string, venue: VenueInfo) => Promise<Court[]>
