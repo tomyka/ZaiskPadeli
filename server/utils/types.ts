@@ -8,6 +8,7 @@ export interface Court {
   id: string          // unique: "padelhub-1", "tennisspace-46", "padelhouse-1"
   name: string        // "Kortas 1", "01 Neodenta"
   type: 'doubles' | 'singles' | 'unknown'
+  indoor?: boolean    // true = indoor, false = outdoor, undefined = unknown
   slots: TimeSlot[]
 }
 

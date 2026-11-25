@@ -1,6 +1,8 @@
 import { load } from 'cheerio'
-import type { Venue, Court, TimeSlot } from './types'
+import type { Venue } from './types'
 import { extractSetCookies, mergeCookies } from './cookies'
+import { parseNTennisGrid } from './ntennis'
+import { currentMinutesFor } from './time'
 
 /**
  * Tennis Space — nTennis/nSoft platform (Yii PHP)
@@ -100,71 +102,9 @@ export async function scrapeTennisSpace(date: string): Promise<Venue> {
       return venue
     }
 
-    const $ = load(html)
-
-    // Parse color→price map from legend (prices are per hour, divide by 2 for 30-min slots)
-    const colorPriceMap = new Map<string, number>()
-    $('.legend-item').each((_, el) => {
-      const style = $(el).find('span[style]').attr('style') || ''
-      const colorMatch = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)
-      const priceText = $(el).text().trim()
-      const priceMatch = priceText.match(/(\d+)\s*€/)
-      if (colorMatch && priceMatch) {
-        colorPriceMap.set(colorMatch[1].toLowerCase(), parseInt(priceMatch[1]) / 2)
-      }
-    })
-
-    // Parse hour headers, then expand to 30-min slots (each header = 2 TDs: kaire + desine)
-    const slotTimes: string[] = []
-    $('thead th').each((_, el) => {
-      const text = $(el).text().trim()
-      if (/^\d{1,2}:\d{2}$/.test(text)) {
-        slotTimes.push(text)
-        const [hh, mm] = text.split(':')
-        slotTimes.push(`${hh}:${(parseInt(mm) + 30).toString().padStart(2, '0')}`)
-      }
-    })
-
-    // Parse court rows
-    $('tr').each((_, row) => {
-      const nameEl = $(row).find('td.rbt-sticky-col, th.rbt-sticky-col')
-      const courtName = nameEl.text().trim()
-      if (!courtName) return
-
-      const slots: TimeSlot[] = []
-      let slotIdx = 0
-
-      $(row).find('td').each((_, cell) => {
-        const classes = $(cell).attr('class') || ''
-        if (classes.includes('rbt-sticky-col')) return
-
-        const isAvailable = classes.includes('booking-slot-available')
-        const isBooked = classes.includes('booking-slot-na') || classes.includes('full')
-        const isPast = classes.includes('past')
-
-        if (isAvailable || isBooked || isPast) {
-          const time = slotTimes[slotIdx] || ''
-          if (time) {
-            const style = $(cell).attr('style') || ''
-            const bgColor = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)?.[1]?.toLowerCase()
-            const price = isAvailable && bgColor ? (colorPriceMap.get(bgColor) ?? null) : null
-            slots.push({ time, available: isAvailable, price })
-          }
-          slotIdx++
-        }
-      })
-
-      if (slots.length > 0) {
-        const isSingles = courtName.toLowerCase().includes('vienet')
-        venue.courts.push({
-          id: `tennisspace-${courtName.replace(/\s+/g, '-').toLowerCase()}`,
-          name: courtName,
-          type: isSingles ? 'singles' : 'doubles',
-          slots,
-        })
-      }
-    })
-  } catch (err: any) {
+    venue.courts = parseNTennisGrid(html, { idPrefix: 'tennisspace', currentMinutes: currentMinutesFor(date) })
+  } catch (err) {
+    console.warn('[tennisspace] scrape failed:', (err as Error).message)
     venue.error = 'Failed to fetch Tennis Space data'
   }
 

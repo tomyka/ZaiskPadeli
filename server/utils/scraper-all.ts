@@ -5,6 +5,9 @@ import { scrapeKaunoPadelis } from './scraper-kaunopadelis'
 import { scrapeVilniusPadel } from './scraper-vilniuspadel'
 import { scrapeA1Padel } from './scraper-a1padel'
 import { scrapeWineroArena, WINERO_VENUES } from './scraper-winero'
+import { scrapeSimonas } from './scraper-simonas'
+import { scrapeKPadel } from './scraper-kpadel'
+import { scrapePrienuose } from './scraper-prienuose'
 import type { Venue } from './types'
 
 /**
@@ -12,7 +15,7 @@ import type { Venue } from './types'
  * and error handling — a single venue failure won't block others.
  */
 export async function scrapeAllVenues(date: string): Promise<Venue[]> {
-  const [padelhub, padelhouse, tennisspace, kaunopadelis, vilniuspadel, a1padel, ...wineroVenues] =
+  const [padelhub, padelhouse, tennisspace, kaunopadelis, vilniuspadel, a1padel, simonas, kpadel, prienuose, ...wineroVenues] =
     await Promise.all([
       scrapePadelHub(date),
       scrapePadelHouse(date),
@@ -20,8 +23,11 @@ export async function scrapeAllVenues(date: string): Promise<Venue[]> {
       scrapeKaunoPadelis(date),
       scrapeVilniusPadel(date),
       scrapeA1Padel(date),
+      scrapeSimonas(date),
+      scrapeKPadel(date),
+      scrapePrienuose(date),
       ...WINERO_VENUES.map(cfg => scrapeWineroArena(cfg, date)),
     ])
 
-  return [padelhub, padelhouse, tennisspace, kaunopadelis, vilniuspadel, a1padel, ...wineroVenues]
+  return [padelhub, padelhouse, tennisspace, kaunopadelis, vilniuspadel, a1padel, simonas, kpadel, prienuose, ...wineroVenues]
 }

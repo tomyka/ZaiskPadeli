@@ -1,10 +1,11 @@
 import { setCached } from '../../utils/cache'
 import { scrapeAllVenues } from '../../utils/scraper-all'
+import { nextDatesLT } from '../../utils/time'
 import type { AvailabilityResponse } from '../../utils/types'
 
 /**
  * Cron endpoint: pre-scrapes today + tomorrow and stores in Vercel KV.
- * Called every 5 minutes by Vercel Cron.
+ * Called every 30 minutes by the GitHub Actions workflow (.github/workflows/scrape-cron.yml).
  * Protected by CRON_SECRET to prevent external abuse.
  */
 export default defineEventHandler(async (event) => {
@@ -12,28 +13,25 @@ export default defineEventHandler(async (event) => {
   const authHeader = getHeader(event, 'authorization')
   const cronSecret = process.env.CRON_SECRET
 
+  // Fail closed in production: a missing secret must not open the endpoint to anyone.
+  if (!cronSecret && process.env.NODE_ENV === 'production') {
+    throw createError({ statusCode: 500, message: 'CRON_SECRET not configured' })
+  }
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 
-  const now = new Date()
-  const dates: string[] = []
+  // Pre-warm today + next 2 days in Lithuanian timezone (most commonly viewed)
+  const dates = nextDatesLT(3)
 
-  // Pre-warm today + next 2 days (most commonly viewed)
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(now)
-    d.setDate(d.getDate() + i)
-    dates.push(d.toISOString().split('T')[0])
-  }
-
-  const results: Record<string, { venues: number; errors: number; ms: number }> = {}
+  const results: Record<string, { venues: number; errors: number; failed: string[]; ms: number }> = {}
 
   for (const date of dates) {
     const start = Date.now()
     try {
       const venues = await scrapeAllVenues(date)
 
-      const errorCount = venues.filter(v => v.error).length
+      const failed = venues.filter(v => v.error).map(v => v.id)
       const result: AvailabilityResponse = {
         date,
         venues,
@@ -42,9 +40,9 @@ export default defineEventHandler(async (event) => {
         cacheAgeSeconds: 0,
       }
       await setCached(date, result)
-      results[date] = { venues: venues.length, errors: errorCount, ms: Date.now() - start }
+      results[date] = { venues: venues.length, errors: failed.length, failed, ms: Date.now() - start }
     } catch (e) {
-      results[date] = { venues: 0, errors: -1, ms: Date.now() - start }
+      results[date] = { venues: 0, errors: -1, failed: [], ms: Date.now() - start }
       console.error(`[cron] Failed to scrape ${date}:`, (e as Error).message)
     }
   }

@@ -1,4 +1,5 @@
 import { kv } from '@vercel/kv'
+import { todayLT } from '../utils/time'
 
 /**
  * Middleware: track page visits in Upstash Redis.
@@ -16,7 +17,7 @@ export default defineEventHandler(async (event) => {
   // Only track if KV is available (production)
   if (!process.env.KV_REST_API_URL) return
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLT()
 
   try {
     await Promise.all([

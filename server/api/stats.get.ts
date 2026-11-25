@@ -1,4 +1,5 @@
 import { kv } from '@vercel/kv'
+import { pastDatesLT } from '../utils/time'
 
 /**
  * GET /api/stats — visitor statistics from Upstash Redis.
@@ -9,13 +10,7 @@ export default defineEventHandler(async () => {
     return { total: 0, today: 0, last30days: [], note: 'KV not available (local dev)' }
   }
 
-  const today = new Date()
-  const dates: string[] = []
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(today)
-    d.setDate(d.getDate() - i)
-    dates.push(d.toISOString().split('T')[0])
-  }
+  const dates = pastDatesLT(30)
 
   const keys = ['visits:total', ...dates.map(d => `visits:${d}`)]
   const values = await kv.mget<number[]>(...keys)

@@ -7,7 +7,11 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxi typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm test"
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",
@@ -20,5 +24,11 @@
   },
   "overrides": {
     "serialize-javascript": ">=7.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.3",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.7",
+    "vue-tsc": "^3.3.14"
   }
 }

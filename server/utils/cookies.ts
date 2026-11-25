@@ -27,7 +27,7 @@ export function extractSetCookies(headers: Headers): string[] {
     // Split on commas that are followed by a cookie-name=value pattern
     // (avoids splitting on commas inside Expires date values like "Thu, 01 Jan 2025")
     for (const c of raw.split(/,(?=\s*[a-zA-Z_][a-zA-Z0-9_]*=)/)) {
-      const part = c.split(';')[0].trim()
+      const part = (c.split(';')[0] ?? '').trim()
       if (part && part.includes('=')) cookies.push(part)
     }
   }

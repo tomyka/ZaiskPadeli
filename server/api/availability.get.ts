@@ -1,17 +1,23 @@
 import { getCached, setCached, getInflight, setInflight } from '../utils/cache'
 import { scrapeAllVenues } from '../utils/scraper-all'
+import { addDays, isValidIsoDate, todayLT } from '../utils/time'
 import type { AvailabilityResponse } from '../utils/types'
+
+/** Keep in sync with the date picker's :max in app/pages/index.vue */
+const MAX_DAYS_AHEAD = 180
 
 export default defineEventHandler(async (event): Promise<AvailabilityResponse> => {
   const query = getQuery(event)
-  const date = (query.date as string) || new Date().toISOString().split('T')[0]
+  const today = todayLT()
+  const date = typeof query.date === 'string' && query.date ? query.date : today
 
-  // Strict date validation: format + calendar sanity
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw createError({ statusCode: 400, message: 'Invalid date format. Use YYYY-MM-DD' })
+  // Strict date validation: format + real calendar date (rejects 2026-02-31)
+  if (!isValidIsoDate(date)) {
+    throw createError({ statusCode: 400, message: 'Invalid date. Use YYYY-MM-DD' })
   }
-  const parsed = new Date(date + 'T12:00:00')
-  if (isNaN(parsed.getTime()) || parsed.getFullYear() < 2024 || parsed.getFullYear() > 2030) {
+  // Bounded window: also caps how many distinct dates (cache keys / upstream scrapes)
+  // an anonymous caller can trigger. Yesterday is allowed for clients just past midnight.
+  if (date < addDays(today, -1) || date > addDays(today, MAX_DAYS_AHEAD)) {
     throw createError({ statusCode: 400, message: 'Date out of range' })
   }
 

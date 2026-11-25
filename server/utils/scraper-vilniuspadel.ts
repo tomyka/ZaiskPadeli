@@ -1,6 +1,8 @@
 import { load } from 'cheerio'
-import type { Venue, TimeSlot } from './types'
+import type { Venue } from './types'
 import { extractSetCookies, mergeCookies } from './cookies'
+import { parseNTennisGrid } from './ntennis'
+import { currentMinutesFor } from './time'
 
 /**
  * Vilnius Padel Arena — nTennis/nSoft platform
@@ -92,70 +94,9 @@ export async function scrapeVilniusPadel(date: string): Promise<Venue> {
       return venue
     }
 
-    const $ = load(html)
-
-    // Color→price map from legend (per hour → divide by 2 for 30-min slot)
-    const colorPriceMap = new Map<string, number>()
-    $('.legend-item').each((_, el) => {
-      const style = $(el).find('span[style]').attr('style') || ''
-      const colorMatch = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)
-      const priceText = $(el).text().trim()
-      const priceMatch = priceText.match(/(\d+(?:[.,]\d+)?)\s*€/)
-      if (colorMatch && priceMatch) {
-        colorPriceMap.set(colorMatch[1].toLowerCase(), parseFloat(priceMatch[1].replace(',', '.')) / 2)
-      }
-    })
-
-    // Build time slot list from hour headers (each hour → :00 and :30)
-    const slotTimes: string[] = []
-    $('thead th').each((_, el) => {
-      const text = $(el).text().trim()
-      if (/^\d{1,2}:\d{2}$/.test(text)) {
-        slotTimes.push(text)
-        const [hh, mm] = text.split(':')
-        slotTimes.push(`${hh}:${(parseInt(mm) + 30).toString().padStart(2, '0')}`)
-      }
-    })
-
-    // Court rows — same kaire/desine structure as Tennis Space & Kauno Padelio Klubas
-    $('tr').each((_, row) => {
-      const nameEl = $(row).find('td.rbt-sticky-col, th.rbt-sticky-col')
-      const courtName = nameEl.text().trim()
-      if (!courtName) return
-
-      const slots: TimeSlot[] = []
-      let slotIdx = 0
-
-      $(row).find('td').each((_, cell) => {
-        const classes = $(cell).attr('class') || ''
-        if (classes.includes('rbt-sticky-col')) return
-
-        const isAvailable = classes.includes('booking-slot-available')
-        const isBooked = classes.includes('booking-slot-na') || classes.includes('full')
-        const isPast = classes.includes('past')
-
-        if (isAvailable || isBooked || isPast) {
-          const time = slotTimes[slotIdx] || ''
-          if (time) {
-            const style = $(cell).attr('style') || ''
-            const bgColor = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)?.[1]?.toLowerCase()
-            const price = isAvailable && bgColor ? (colorPriceMap.get(bgColor) ?? null) : null
-            slots.push({ time, available: isAvailable, price })
-          }
-          slotIdx++
-        }
-      })
-
-      if (slots.length > 0) {
-        venue.courts.push({
-          id: `vilniuspadel-${courtName.replace(/\s+/g, '-').toLowerCase()}`,
-          name: courtName,
-          type: 'doubles',
-          slots,
-        })
-      }
-    })
-  } catch (err: any) {
+    venue.courts = parseNTennisGrid(html, { idPrefix: 'vilniuspadel', currentMinutes: currentMinutesFor(date) })
+  } catch (err) {
+    console.warn('[vilniuspadel] scrape failed:', (err as Error).message)
     venue.error = 'Failed to fetch Vilnius Padel Arena data'
   }
 

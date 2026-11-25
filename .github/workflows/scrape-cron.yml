@@ -2,7 +2,7 @@ name: Pre-warm scrape cache
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # every 30 minutes — stays under the free 2,000 min/month Actions quota on this private repo
+    - cron: '*/30 * * * *'  # every 30 minutes — throttled from 5 min to stay within the Actions minutes quota (see 8e5a88d)
   workflow_dispatch:         # allow manual trigger
 
 jobs:
@@ -12,11 +12,24 @@ jobs:
     steps:
       - name: Trigger scrape
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
+          status=$(curl -s -o body.json -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://zaiskpadeli.lt/api/cron/scrape")
-          echo "Response: $response"
-          if [ "$response" != "200" ]; then
-            echo "Scrape returned HTTP $response"
+          echo "Response: $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Scrape returned HTTP $status"
+            exit 1
+          fi
+          # Scraper-health canary: surface venues whose upstream site broke
+          # (a warning annotation on the run, not a failure, so one flaky venue doesn't page anyone)
+          jq -r '.results | to_entries[] | "\(.key) venues=\(.value.venues) errors=\(.value.errors) ms=\(.value.ms) failed=\(.value.failed // [] | join(","))"' body.json
+          failed=$(jq -r '[.results[].failed // [] | .[]] | unique | join(", ")' body.json)
+          if [ -n "$failed" ]; then
+            echo "::warning title=Venues failing to scrape::$failed"
+          fi
+          # errors == -1 means the whole date failed to scrape — that's an outage, fail the run
+          dead=$(jq -r '[.results | to_entries[] | select(.value.errors == -1) | .key] | join(", ")' body.json)
+          if [ -n "$dead" ]; then
+            echo "::error title=Scrape failed for whole dates::$dead"
             exit 1
           fi

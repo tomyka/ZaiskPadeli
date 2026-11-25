@@ -1,4 +1,5 @@
-import type { Venue, Court, TimeSlot } from './types'
+import type { City, Venue, TimeSlot } from './types'
+import { currentMinutesFor, dayOfWeek, halfHourSlots, isSlotOver, toEndMinutes, toMinutes } from './time'
 
 /**
  * Generic Winero.lt scraper
@@ -9,74 +10,55 @@ import type { Venue, Court, TimeSlot } from './types'
 const WINERO_BASE = 'https://www.winero.lt'
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-const DAY_SHORT = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const
 
-/** Parse "Monday 06:00 – 23:00\nTuesday..." → {open: "06:00", close: "23:00"} for today */
-function parseOpeningHours(raw: string, date: string): { open: string; close: string } | null {
-  const dateObj = new Date(date + 'T12:00:00')
-  const dayName = DAY_NAMES[dateObj.getDay()]
-  const lines = raw.split(/\\n|\n/)
-  for (const line of lines) {
+interface WineroTimeSlot { start_time: string; end_time: string; price: number }
+interface WineroPricePeriod { days: string[]; time_slots?: WineroTimeSlot[] }
+interface WineroExceptionPeriod extends WineroPricePeriod { start_date: string; end_date: string }
+export interface WineroCourt {
+  id: string
+  name: string
+  price_periods?: WineroPricePeriod[]
+  exception_price_periods?: WineroExceptionPeriod[]
+}
+
+/** Parse "Monday 06:00 – 23:00\nTuesday..." → {open: "06:00", close: "23:00"} for the given date */
+export function parseOpeningHours(raw: string, date: string): { open: string; close: string } | null {
+  const dayName = DAY_NAMES[dayOfWeek(date)]!
+  // Winero returns either real newlines or literal "\n" escape sequences
+  for (const line of raw.split(/\\n|\n/)) {
     if (!line.includes(dayName)) continue
     const match = line.match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/)
-    if (match) return { open: match[1].padStart(5, '0'), close: match[2].padStart(5, '0') }
+    if (match?.[1] && match[2]) return { open: match[1].padStart(5, '0'), close: match[2].padStart(5, '0') }
   }
   return null
 }
 
-/** Get per-30-min price for a given slot time on a given date from Winero price periods */
-function getPriceForSlot(court: any, date: string, slotTime: string): number | null {
+function priceIn(slots: WineroTimeSlot[] | undefined, slotMin: number): number | null {
+  for (const ts of slots ?? []) {
+    if (slotMin >= toMinutes(ts.start_time) && slotMin < toEndMinutes(ts.end_time)) return ts.price / 2 // per hour → per 30 min
+  }
+  return null
+}
+
+/** Per-30-min price for a slot. Exception periods (date-ranged) take precedence over regular ones. */
+export function getPriceForSlot(court: WineroCourt, date: string, slotTime: string): number | null {
   const slotMin = toMinutes(slotTime)
-  const dateObj = new Date(date + 'T12:00:00')
-  const dayShort = DAY_SHORT[dateObj.getDay()]
+  const day = DAY_NAMES[dayOfWeek(date)]!.toLowerCase()
 
-  // Check exception price periods first
   for (const exc of court.exception_price_periods ?? []) {
-    if (!exc.days.includes(dayShort)) continue
-    const start = new Date(exc.start_date + 'T00:00:00')
-    const end = new Date(exc.end_date + 'T23:59:59')
-    if (dateObj >= start && dateObj <= end) {
-      for (const ts of exc.time_slots ?? []) {
-        const tsStart = toMinutes(ts.start_time)
-        const tsEnd = ts.end_time === '00:00' ? 1440 : toMinutes(ts.end_time)
-        if (slotMin >= tsStart && slotMin < tsEnd) return ts.price / 2 // per hour → per 30min
-      }
+    // ISO dates compare correctly as strings
+    if (exc.days.includes(day) && date >= exc.start_date && date <= exc.end_date) {
+      const price = priceIn(exc.time_slots, slotMin)
+      if (price !== null) return price
     }
   }
-
-  // Regular price periods
   for (const period of court.price_periods ?? []) {
-    if (!period.days.includes(dayShort)) continue
-    for (const ts of period.time_slots ?? []) {
-      const tsStart = toMinutes(ts.start_time)
-      const tsEnd = ts.end_time === '00:00' ? 1440 : toMinutes(ts.end_time)
-      if (slotMin >= tsStart && slotMin < tsEnd) return ts.price / 2
-    }
+    if (!period.days.includes(day)) continue
+    const price = priceIn(period.time_slots, slotMin)
+    if (price !== null) return price
   }
-
   return null
-}
-
-/** Convert "HH:MM" or "HH:MM:SS" to minutes since midnight */
-function toMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number)
-  return h * 60 + m
-}
-
-/** Generate 30-min slot start times between open and close */
-function generateSlots(open: string, close: string): string[] {
-  const slots: string[] = []
-  let cur = toMinutes(open)
-  // "00:00" as closing means midnight (1440 min)
-  const end = close === '00:00' ? 1440 : toMinutes(close)
-  while (cur < end) {
-    const h = Math.floor(cur / 60).toString().padStart(2, '0')
-    const m = (cur % 60).toString().padStart(2, '0')
-    slots.push(`${h}:${m}`)
-    cur += 30
-  }
-  return slots
 }
 
 export interface WineroArenaConfig {
@@ -84,9 +66,19 @@ export interface WineroArenaConfig {
   venueId: string
   name: string
   address: string
+  /** Defaults to Vilnius */
+  city?: City
   bookingUrl: string
+  /** Whether courts are indoors (true) or outdoors (false). Omit for unknown. */
+  indoor?: boolean
   /** Court name substrings to skip (case-insensitive) */
   skipCourts?: string[]
+}
+
+async function getJson(url: string): Promise<any> {
+  const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15_000) })
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
+  return res.json()
 }
 
 export async function scrapeWineroArena(config: WineroArenaConfig, date: string): Promise<Venue> {
@@ -94,79 +86,64 @@ export async function scrapeWineroArena(config: WineroArenaConfig, date: string)
     id: config.venueId,
     name: config.name,
     address: config.address,
-    city: 'Vilnius',
+    city: config.city ?? 'Vilnius',
     bookingUrl: config.bookingUrl,
     courts: [],
     lastUpdated: new Date().toISOString(),
   }
 
   try {
-    const [arenaRes, availRes] = await Promise.all([
-      fetch(`${WINERO_BASE}/api/arenas/${config.id}`, { headers: { 'User-Agent': UA } }),
-      fetch(`${WINERO_BASE}/api/bookings/public-availability?arena_id=${config.id}&date=${date}`, {
-        headers: { 'User-Agent': UA },
-      }),
+    const [arenaData, availData] = await Promise.all([
+      getJson(`${WINERO_BASE}/api/arenas/${config.id}`),
+      getJson(`${WINERO_BASE}/api/bookings/public-availability?arena_id=${config.id}&date=${date}`),
     ])
 
-    const [arenaData, availData] = await Promise.all([arenaRes.json(), availRes.json()])
-
-    if (!arenaData.id) {
+    if (!arenaData?.id) {
       venue.error = 'Arena not found'
       return venue
     }
 
-    // Build booked ranges per court: Map<courtId, [{start, end}]>
+    // Booked ranges per court
     const bookedMap = new Map<string, Array<{ start: number; end: number }>>()
-    for (const slot of availData.data ?? []) {
-      const start = toMinutes(slot.start_time)
-      const end = slot.end_time === '00:00:00' ? 1440 : toMinutes(slot.end_time)
-      if (!bookedMap.has(slot.court_id)) bookedMap.set(slot.court_id, [])
-      bookedMap.get(slot.court_id)!.push({ start, end })
+    for (const slot of availData?.data ?? []) {
+      const ranges = bookedMap.get(slot.court_id) ?? []
+      ranges.push({ start: toMinutes(slot.start_time), end: toEndMinutes(slot.end_time) })
+      bookedMap.set(slot.court_id, ranges)
     }
 
-    // Parse today's operating hours
     const hours = parseOpeningHours(arenaData.opening_hours ?? '', date)
     if (!hours) {
       venue.error = 'Could not parse opening hours'
       return venue
     }
 
-    const slotTimes = generateSlots(hours.open, hours.close)
-
-    // Courts come from detail API (includes price_periods)
-    const courts: any[] = arenaData.courts ?? []
-
-    const now = new Date()
-    const todayStr = date
-    const currentMinutes = now.toDateString() === new Date(todayStr + 'T12:00:00').toDateString()
-      ? now.getHours() * 60 + now.getMinutes()
-      : -1
+    const slotTimes = halfHourSlots(hours.open, hours.close)
+    const currentMinutes = currentMinutesFor(date)
+    const courts: WineroCourt[] = arenaData.courts ?? []
 
     for (const court of courts) {
-      const skip = config.skipCourts?.some(s => court.name.toLowerCase().includes(s.toLowerCase()))
-      if (skip) continue
+      const name = court.name.toLowerCase()
+      if (config.skipCourts?.some(s => name.includes(s.toLowerCase()))) continue
 
       const booked = bookedMap.get(court.id) ?? []
-      const type = court.name.toLowerCase().includes('single') ? 'singles' : 'doubles'
-
       const slots: TimeSlot[] = slotTimes.map(time => {
         const slotStart = toMinutes(time)
         const slotEnd = slotStart + 30
-        const isPast = currentMinutes > 0 && slotEnd <= currentMinutes
         const isBooked = booked.some(b => b.start < slotEnd && b.end > slotStart)
-        const available = !isPast && !isBooked
-        const price = available ? getPriceForSlot(court, date, time) : null
-        return { time, available, price }
+        const available = !isSlotOver(time, currentMinutes) && !isBooked
+        return { time, available, price: available ? getPriceForSlot(court, date, time) : null }
       })
 
       venue.courts.push({
         id: `${config.venueId}-${court.id}`,
         name: court.name,
-        type: type as 'singles' | 'doubles',
+        type: name.includes('single') ? 'singles' : 'doubles',
+        indoor: config.indoor,
         slots,
       })
     }
-  } catch (err: any) {
+  } catch (err) {
+    console.warn(`[${config.venueId}] scrape failed:`, (err as Error).message)
     venue.error = `Failed to fetch ${config.name} data`
   }
 
@@ -182,6 +159,7 @@ export const WINERO_VENUES: WineroArenaConfig[] = [
     name: 'Žirmūnų Padelio Arena',
     address: 'Žirmūnų g. 139, Vilnius',
     bookingUrl: 'https://www.winero.lt/arena/irmn-padelio-arena',
+    indoor: true,
   },
   {
     id: '6526ba41-0328-4562-9da0-c8708f2e42ec',
@@ -189,6 +167,36 @@ export const WINERO_VENUES: WineroArenaConfig[] = [
     name: 'Padel Factory',
     address: 'Savanorių pr. 180, Vilnius',
     bookingUrl: 'https://www.winero.lt/arena/padel-factory',
+    indoor: true,
     skipCourts: ['kamuoliukų mašina', 'ball machine'],
+  },
+  // ── Panevėžys ────────────────────────────────────────────────────────────────
+  {
+    id: '887c031b-06a6-4799-8355-fb2685f2b508',
+    venueId: 'bajada',
+    name: 'BAJADA Padelio Kortai',
+    address: 'Elektronikos g. 64, Panevėžys',
+    city: 'Panevėžys',
+    bookingUrl: 'https://www.panevezyspadel.lt',
+    indoor: true,
+  },
+  {
+    id: 'a582ca8a-ef5a-45ba-b50e-915d1b2b71bd',
+    venueId: 'aukstaitijos',
+    name: 'Aukštaitijos Padelio Klubas',
+    address: 'Parko g. 16, Panevėžys',
+    city: 'Panevėžys',
+    bookingUrl: 'https://www.winero.lt/arenas',
+    indoor: true,
+  },
+  // ── Kaunas apskritis ─────────────────────────────────────────────────────────
+  {
+    id: '41bb5931-4468-46e7-96ad-2c958240da9c',
+    venueId: 'harmonypark',
+    name: 'Harmony Park',
+    address: 'Vazgaikiemis, Prienų raj.',
+    city: 'Kaunas',
+    bookingUrl: 'https://www.winero.lt/arena/harmony-park',
+    indoor: false,
   },
 ]

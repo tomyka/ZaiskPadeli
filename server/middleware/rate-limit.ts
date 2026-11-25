@@ -1,3 +1,5 @@
+import type { H3Event } from 'h3'
+
 /**
  * Simple IP-based rate limiter for /api/* routes.
  * 20 requests per IP per minute. Resets on cold start (serverless-safe).
@@ -14,10 +16,10 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>()
 
-function getIp(event: any): string {
-  // Vercel forwards real IP in x-forwarded-for
-  const forwarded = getHeader(event, 'x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
+function getIp(event: H3Event): string {
+  // Vercel overwrites x-forwarded-for with the real client IP (first entry)
+  const forwarded = getHeader(event, 'x-forwarded-for')?.split(',')[0]?.trim()
+  if (forwarded) return forwarded
   return getHeader(event, 'x-real-ip') || event.node?.req?.socket?.remoteAddress || 'unknown'
 }
 
@@ -45,7 +47,7 @@ export default defineEventHandler((event) => {
 
   if (bucket.count > MAX_REQUESTS) {
     const retryAfter = Math.ceil((bucket.resetAt - now) / 1000)
-    setHeader(event, 'Retry-After', String(retryAfter))
+    setHeader(event, 'Retry-After', retryAfter)
     throw createError({
       statusCode: 429,
       message: 'Too many requests. Please wait before retrying.',

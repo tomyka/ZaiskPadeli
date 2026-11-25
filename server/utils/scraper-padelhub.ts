@@ -49,13 +49,15 @@ export async function scrapePadelHub(date: string): Promise<Venue> {
         name: name
           .replace(/Padelio (?:dvejetų|vienetų) kortas\s*/i, '')
           .replace(/\s*[„"",,]+\s*/g, ' ')
-          .replace(/^\d+\s*/, (m) => `#${m.trim()} `)
+          .replace(/^\d+\s*/, (m: string) => `#${m.trim()} `)
           .trim() || `Kortas ${court.id}`,
         type: isSingles ? 'singles' : isDoubles ? 'doubles' : 'unknown',
+        indoor: true,
         slots,
       })
     }
-  } catch (err: any) {
+  } catch (err) {
+    console.warn('[padelhub] scrape failed:', (err as Error).message)
     venue.error = 'Failed to fetch Padel Hub data'
   }
 

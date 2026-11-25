@@ -1,5 +1,7 @@
 import { load } from 'cheerio'
 import type { Venue, Court, TimeSlot } from './types'
+import { expandHourHeader, parseBgColor, parseEuro } from './parse'
+import { currentMinutesFor, isSlotOver } from './time'
 
 /**
  * Padel House — Public HTML timetable
@@ -8,24 +10,54 @@ import type { Venue, Court, TimeSlot } from './types'
  * Prices derived from background-color via on-page legend (div.time-description).
  */
 
-function parseColorPriceMap(html: string): Map<string, number> {
+/** Pure parser for the Padel House timetable page (exported for tests). */
+export function parsePadelHouseHtml(html: string, currentMinutes: number): Court[] {
   const $ = load(html)
-  const map = new Map<string, number>()
 
+  // Colour → hourly price. Current (possibly promo) price: strip .old-price first.
+  const colorPrice = new Map<string, number>()
   $('div.time-description').each((_, el) => {
-    const colorEl = $(el).find('div.color')
-    const descEl = $(el).find('div.description')
-    const style = colorEl.attr('style') || ''
-    const colorMatch = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)
-    // Current (possibly promo) price — first number before €
-    const priceText = descEl.clone().children('.old-price').remove().end().text()
-    const priceMatch = priceText.match(/(\d+)\s*€/)
-    if (colorMatch && priceMatch) {
-      map.set(colorMatch[1].toLowerCase(), parseInt(priceMatch[1]))
-    }
+    const color = parseBgColor($(el).find('div.color').attr('style'))
+    const priceText = $(el).find('div.description').clone().children('.old-price').remove().end().text()
+    const price = parseEuro(priceText)
+    if (color && price !== null) colorPrice.set(color, price)
   })
 
-  return map
+  // Use only the first (desktop) table; hour headers span two 30-min cells
+  const table = $('table').first()
+  const slotTimes: string[] = []
+  table.find('th[colspan="2"]').each((_, el) => { slotTimes.push(...expandHourHeader($(el).text())) })
+
+  const courtsByName = new Map<string, TimeSlot[]>()
+  table.find('tr').each((_, row) => {
+    const courtName = $(row).find('th.sticky-colum, td.sticky-colum').text().trim()
+    if (!courtName || courtsByName.has(courtName)) return
+
+    const slots: TimeSlot[] = []
+    let slotIdx = 0
+    $(row).find('td').each((_, cell) => {
+      const el = $(cell)
+      const classes = el.attr('class') || ''
+      if (classes.includes('sticky')) return
+
+      const time = slotTimes[slotIdx++]
+      if (!time) return
+      const available = !classes.includes('not-available') && !isSlotOver(time, currentMinutes)
+      const color = parseBgColor(el.attr('style'))
+      const hourly = color ? colorPrice.get(color) : undefined
+      slots.push({ time, available, price: available && hourly !== undefined ? hourly / 2 : null })
+    })
+
+    if (slots.length > 0) courtsByName.set(courtName, slots)
+  })
+
+  return [...courtsByName].map(([name, slots], i) => ({
+    id: `padelhouse-${i + 1}`,
+    name,
+    type: 'doubles',
+    indoor: true,
+    slots,
+  }))
 }
 
 export async function scrapePadelHouse(date: string): Promise<Venue> {
@@ -44,64 +76,9 @@ export async function scrapePadelHouse(date: string): Promise<Venue> {
       timeout: 15000,
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PadelKaunas/1.0)' },
     })
-
-    const colorPriceMap = parseColorPriceMap(html)
-    const $ = load(html)
-    const courtsMap = new Map<string, TimeSlot[]>()
-
-    // Build 30-min time slots from colspan=2 hour headers
-    const slotTimes: string[] = []
-    $('table').first().find('th[colspan="2"]').each((_, el) => {
-      const hour = $(el).text().trim()
-      if (/^\d{1,2}:\d{2}$/.test(hour)) {
-        slotTimes.push(hour)
-        const [hh, mm] = hour.split(':')
-        slotTimes.push(`${hh}:${(parseInt(mm) + 30).toString().padStart(2, '0')}`)
-      }
-    })
-
-    // Use only the first (desktop) table
-    $('table').first().find('tr').each((_, row) => {
-      const courtNameEl = $(row).find('th.sticky-colum, td.sticky-colum')
-      const courtName = courtNameEl.text().trim()
-      if (!courtName) return
-
-      const slots: TimeSlot[] = []
-      let slotIdx = 0
-
-      $(row).find('td').each((_, cell) => {
-        const el = $(cell)
-        const classes = el.attr('class') || ''
-        if (classes.includes('sticky-colum') || classes.includes('sticky')) return
-
-        const time = slotTimes[slotIdx] || ''
-        const isBooked = classes.includes('not-available')
-        const style = el.attr('style') || ''
-        const bgColor = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)?.[1]?.toLowerCase()
-        const price = bgColor ? (colorPriceMap.get(bgColor) ?? null) : null
-
-        if (time) {
-          slots.push({ time, available: !isBooked, price: !isBooked && price != null ? price / 2 : null })
-        }
-        slotIdx++
-      })
-
-      if (slots.length > 0 && !courtsMap.has(courtName)) {
-        courtsMap.set(courtName, slots)
-      }
-    })
-
-    let courtIdx = 1
-    for (const [name, slots] of courtsMap) {
-      venue.courts.push({
-        id: `padelhouse-${courtIdx}`,
-        name,
-        type: 'doubles',
-        slots,
-      })
-      courtIdx++
-    }
-  } catch (err: any) {
+    venue.courts = parsePadelHouseHtml(html, currentMinutesFor(date))
+  } catch (err) {
+    console.warn('[padelhouse] scrape failed:', (err as Error).message)
     venue.error = 'Failed to fetch Padel House data'
   }
 

@@ -1,6 +1,8 @@
 import { load } from 'cheerio'
-import type { Venue, Court, TimeSlot } from './types'
+import type { Venue } from './types'
 import { extractSetCookies, mergeCookies } from './cookies'
+import { parseNTennisGrid } from './ntennis'
+import { currentMinutesFor } from './time'
 
 /**
  * Kauno Padelio Klubas — nTennis/nSoft platform
@@ -32,8 +34,9 @@ export async function scrapeKaunoPadelis(date: string): Promise<Venue> {
       venue.error = 'Nepavyko gauti rezervacijos duomenų'
       return venue
     }
-    parseGrid(html, venue)
-  } catch (err: any) {
+    parseGrid(html, venue, date)
+  } catch (err) {
+    console.warn('[kaunopadelis] scrape failed:', (err as Error).message)
     venue.error = 'Failed to fetch Kauno Padelio Klubas data'
   }
 
@@ -170,72 +173,8 @@ async function fetchGridDirect(date: string): Promise<string | null> {
 }
 
 /** Parse nTennis grid HTML into venue courts */
-function parseGrid(html: string, venue: Venue): void {
-  const $ = load(html)
-
-  // Color→price map (per hour from legend, divide by 2 for 30-min slot)
-  const colorPriceMap = new Map<string, number>()
-  $('.legend-item').each((_, el) => {
-    const style = $(el).find('span[style]').attr('style') || ''
-    const colorMatch = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)
-    const priceText = $(el).text().trim()
-    const priceMatch = priceText.match(/(\d+(?:[.,]\d+)?)\s*€/)
-    if (colorMatch && priceMatch) {
-      colorPriceMap.set(colorMatch[1].toLowerCase(), parseFloat(priceMatch[1].replace(',', '.')) / 2)
-    }
-  })
-
-  // Hour headers → expand to 30-min slot times
-  const slotTimes: string[] = []
-  $('thead th').each((_, el) => {
-    const text = $(el).text().trim()
-    if (/^\d{1,2}:\d{2}$/.test(text)) {
-      slotTimes.push(text)
-      const [hh, mm] = text.split(':')
-      slotTimes.push(`${hh}:${(parseInt(mm) + 30).toString().padStart(2, '0')}`)
-    }
-  })
-
-  // Court rows
-  $('tr').each((_, row) => {
-    const nameEl = $(row).find('td.rbt-sticky-col, th.rbt-sticky-col')
-    const courtName = nameEl.text().trim()
-    if (!courtName) return
-
-    const slots: TimeSlot[] = []
-    let slotIdx = 0
-
-    $(row).find('td').each((_, cell) => {
-      const classes = $(cell).attr('class') || ''
-      if (classes.includes('rbt-sticky-col')) return
-
-      const isAvailable = classes.includes('booking-slot-available')
-      const isBooked = classes.includes('booking-slot-na') || classes.includes('full')
-      const isPast = classes.includes('past')
-
-      if (isAvailable || isBooked || isPast) {
-        const time = slotTimes[slotIdx] || ''
-        if (time) {
-          const style = $(cell).attr('style') || ''
-          const bgColor = style.match(/background-color:\s*(#[0-9a-fA-F]+)/i)?.[1]?.toLowerCase()
-          const price = isAvailable && bgColor ? (colorPriceMap.get(bgColor) ?? null) : null
-          slots.push({ time, available: isAvailable, price })
-        }
-        slotIdx++
-      }
-    })
-
-    if (slots.length > 0) {
-      venue.courts.push({
-        id: `kaunopadelis-${courtName.replace(/\s+/g, '-').toLowerCase()}`,
-        name: courtName,
-        type: 'doubles',
-        indoor: true,
-        slots,
-      })
-    }
-  })
-
+function parseGrid(html: string, venue: Venue, date: string): void {
+  venue.courts = parseNTennisGrid(html, { idPrefix: 'kaunopadelis', currentMinutes: currentMinutesFor(date) })
   if (venue.courts.length === 0) {
     venue.error = 'Rezervacijos duomenys neprieinami'
   }

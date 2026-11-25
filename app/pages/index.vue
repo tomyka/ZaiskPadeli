@@ -21,7 +21,7 @@
       </div>
       <!-- Calendar picker for dates beyond 7 days -->
       <label class="relative shrink-0 cursor-pointer" title="Pasirinkti datą">
-        <input type="date" v-model="selectedDate" :min="today"
+        <input type="date" v-model="selectedDate" :min="today" :max="maxDate"
           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
         <div :class="['flex h-11 items-center justify-center rounded-xl border bg-white transition-all duration-200',
           isCustomDate
@@ -51,7 +51,7 @@
               : 'bg-white border-gray-200 text-gray-500 hover:border-emerald-300 hover:text-emerald-600'
           ]">
           {{ city }}
-          <span v-if="city !== 'Kaunas' && city !== 'Vilnius' && city !== 'Klaipėda'"
+          <span v-if="city !== 'Kaunas' && city !== 'Vilnius' && city !== 'Klaipėda' && city !== 'Panevėžys'"
             class="ml-0.5 rounded-full bg-white/20 px-1 text-[8px] font-bold uppercase tracking-wider opacity-60">greitai</span>
         </button>
       </div>
@@ -107,6 +107,22 @@
         </select>
       </div>
 
+      <!-- Divider -->
+      <div class="h-5 w-px bg-gray-200 hidden sm:block"></div>
+
+      <!-- Indoor / Outdoor -->
+      <div class="flex items-center gap-1.5">
+        <svg class="h-4 w-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12 12 2.25 21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+        </svg>
+        <select v-model="filterIndoor"
+          class="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-600 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400">
+          <option :value="null">Vidaus/Lauko</option>
+          <option :value="true">Vidaus</option>
+          <option :value="false">Lauko</option>
+        </select>
+      </div>
+
       <!-- Venue pills -->
       <div class="ml-auto flex flex-wrap gap-1.5">
         <button v-for="venue in cityVenues" :key="venue.id"
@@ -120,7 +136,7 @@
       </div>
 
       <!-- Clear filters -->
-      <button v-if="filterStart || filterType || activeVenue"
+      <button v-if="filterStart || filterType || filterIndoor !== null || activeVenue"
         @click="clearFilters"
         class="rounded-full border border-gray-200 px-2 py-1 text-[11px] text-gray-400 hover:text-red-500 hover:border-red-200 transition"
         title="Išvalyti filtrus">
@@ -307,12 +323,36 @@
 import type { AvailabilityResponse, Venue, Court, City } from '~~/server/utils/types'
 import { CITIES, CITY_COORDS } from '~~/server/utils/types'
 
-const today = new Date().toISOString().split('T')[0]
+const LT_TZ = 'Europe/Vilnius'
+
+/** Returns today's date as YYYY-MM-DD in Lithuanian timezone */
+function todayLT(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: LT_TZ })
+}
+
+/**
+ * Returns a YYYY-MM-DD date string N days from today in Lithuanian timezone,
+ * along with day-of-week (0=Sun) and day-of-month numbers.
+ */
+function ltDateOffset(offsetDays: number): { dateStr: string; dayOfWeek: number; dayOfMonth: number } {
+  const [y = 1970, m = 1, d = 1] = todayLT().split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d + offsetDays, 12))
+  return {
+    dateStr: dt.toISOString().slice(0, 10),
+    dayOfWeek: dt.getUTCDay(),
+    dayOfMonth: dt.getUTCDate(),
+  }
+}
+
+const today = todayLT()
+/** Matches MAX_DAYS_AHEAD in server/api/availability.get.ts */
+const maxDate = ltDateOffset(180).dateStr
 const selectedDate = ref(today)
 const activeVenue = ref<string | null>(null)
 const filterStart = ref<string>('')
 const filterEnd = ref<string>('')
 const filterType = ref<'doubles' | 'singles' | null>(null)
+const filterIndoor = ref<boolean | null>(null)
 const selectedCity = ref<City | null>('Kaunas')
 const gpsState = ref<'idle' | 'loading' | 'done' | 'error'>('idle')
 const refreshing = ref(false)
@@ -330,15 +370,11 @@ const isToday = computed(() => selectedDate.value === today)
 // 7-day quick navigation pills
 const LT_DAYS = ['Sek', 'Pir', 'Ant', 'Tre', 'Ket', 'Pen', 'Šeš']
 const quickDays = computed(() => {
-  const days: { date: string; label: string; day: number }[] = []
-  for (let i = 0; i < 7; i++) {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    const dateStr = d.toISOString().split('T')[0]
-    const label = i === 0 ? 'Šiandien' : i === 1 ? 'Rytoj' : LT_DAYS[d.getDay()]
-    days.push({ date: dateStr, label, day: d.getDate() })
-  }
-  return days
+  return Array.from({ length: 7 }, (_, i) => {
+    const { dateStr, dayOfWeek, dayOfMonth } = ltDateOffset(i)
+    const label = i === 0 ? 'Šiandien' : i === 1 ? 'Rytoj' : LT_DAYS[dayOfWeek]
+    return { date: dateStr, label, day: dayOfMonth }
+  })
 })
 
 // True when user picked a date beyond the 7-day quick nav
@@ -399,7 +435,7 @@ function isNowSlot(time: string, index: number, slots: { time: string }[]): bool
   const mm = String(now.getMinutes()).padStart(2, '0')
   const nowStr = `${hh}:${mm}`
   if (nowStr < time) return false
-  const nextTime = index < slots.length - 1 ? slots[index + 1].time : '24:00'
+  const nextTime = slots[index + 1]?.time ?? '24:00'
   return nowStr < nextTime
 }
 
@@ -424,6 +460,7 @@ function selectSlot(time: string) {
 function filteredCourts(venue: Venue): Court[] {
   return venue.courts.filter(court => {
     if (filterType.value && court.type !== filterType.value) return false
+    if (filterIndoor.value !== null && court.indoor !== undefined && court.indoor !== filterIndoor.value) return false
     if (filterStart.value) {
       const range = rangeSlots.value
       return Array.from(range).every(t => court.slots.some(s => s.time === t && s.available))
@@ -460,6 +497,7 @@ function clearFilters() {
   filterStart.value = ''
   filterEnd.value = ''
   filterType.value = null
+  filterIndoor.value = null
   activeVenue.value = null
 }
 
@@ -493,6 +531,8 @@ const VENUE_COLORS: Record<string, { border: string; activePill: string }> = {
   zirmunai:     { border: '#14b8a6', activePill: 'border-teal-400 bg-teal-50 text-teal-700' },
   padelfactory: { border: '#f43f5e', activePill: 'border-rose-400 bg-rose-50 text-rose-700' },
   a1padel:      { border: '#06b6d4', activePill: 'border-cyan-400 bg-cyan-50 text-cyan-700' },
+  harmonypark:  { border: '#84cc16', activePill: 'border-lime-400 bg-lime-50 text-lime-700' },
+  prienuose:    { border: '#f59e0b', activePill: 'border-amber-400 bg-amber-50 text-amber-700' },
 }
 
 function venueAccentColor(id: string): string {
