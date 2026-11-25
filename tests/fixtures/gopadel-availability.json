@@ -1,0 +1,80 @@
+{
+  "success": true,
+  "data": {
+    "facilityId": 1,
+    "date": "2026-11-26",
+    "currency": "EUR",
+    "courts": [
+      {
+        "courtId": 1,
+        "slots": [
+          {
+            "start": "15:00",
+            "status": "available",
+            "pricePerHour": 28
+          },
+          {
+            "start": "15:30",
+            "status": "available",
+            "pricePerHour": 28
+          },
+          {
+            "start": "16:00",
+            "status": "available",
+            "pricePerHour": 36
+          },
+          {
+            "start": "16:30",
+            "status": "occupied",
+            "pricePerHour": 36
+          },
+          {
+            "start": "17:00",
+            "status": "occupied",
+            "pricePerHour": 36
+          },
+          {
+            "start": "17:30",
+            "status": "occupied",
+            "pricePerHour": 36
+          }
+        ]
+      },
+      {
+        "courtId": 2,
+        "slots": [
+          {
+            "start": "15:00",
+            "status": "available",
+            "pricePerHour": 28
+          },
+          {
+            "start": "15:30",
+            "status": "available",
+            "pricePerHour": 28
+          },
+          {
+            "start": "16:00",
+            "status": "available",
+            "pricePerHour": 36
+          },
+          {
+            "start": "16:30",
+            "status": "available",
+            "pricePerHour": 36
+          },
+          {
+            "start": "17:00",
+            "status": "occupied",
+            "pricePerHour": 36
+          },
+          {
+            "start": "17:30",
+            "status": "occupied",
+            "pricePerHour": 36
+          }
+        ]
+      }
+    ]
+  }
+}

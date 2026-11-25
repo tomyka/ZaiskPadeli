@@ -165,6 +165,16 @@ export const VENUES = [
     indoor: false, // one lit outdoor court
     color: '#0f766e',
   },
+  // ── Alytaus apskritis ───────────────────────────────────────────────────────
+  {
+    id: 'gopadel',
+    name: 'GO Padel',
+    address: 'Kovo 11-osios g. 2, Alytus',
+    municipality: 'Alytus',
+    bookingUrl: 'https://gopadel.lt/rezervuoti?facility=padel',
+    indoor: true, // 9 heated indoor courts
+    color: '#a855f7',
+  },
 ] as const satisfies readonly VenueInfo[]
 
 export type VenueId = (typeof VENUES)[number]['id']

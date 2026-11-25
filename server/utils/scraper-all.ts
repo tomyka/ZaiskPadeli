@@ -12,6 +12,7 @@ import { scrapeKPadel } from './scraper-kpadel'
 import { scrapePrienuose } from './scraper-prienuose'
 import { scrapePadel4u } from './scraper-padel4u'
 import { wineroScraper } from './scraper-winero'
+import { scrapeGoPadel } from './scraper-gopadel'
 
 /**
  * A scraper fetches one venue's courts for a date.
@@ -36,6 +37,7 @@ export const SCRAPERS: Record<VenueId, Scraper> = {
   padelfactory: wineroScraper({ arenaId: '6526ba41-0328-4562-9da0-c8708f2e42ec', skipCourts: ['kamuoliukų mašina', 'ball machine'] }),
   vilmers: wineroScraper({ arenaId: 'c389edb7-7e41-4e2e-bcb2-a6157cdcfc97' }),
   minija: wineroScraper({ arenaId: 'fdaf2d26-fee7-482d-a555-75140ba59999' }),
+  gopadel: scrapeGoPadel,
 }
 
 /** Hard cap per venue so one hanging upstream can't stall the whole response.
