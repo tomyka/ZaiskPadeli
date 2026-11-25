@@ -47,14 +47,16 @@ describe('parseNTennisGrid', () => {
   })
 })
 
-describe('Padel Hub', () => {
+describe('padelHubSlotTime', () => {
   it('maps the 1-based half-hour timeIdentifier like the booking site does', () => {
     expect(padelHubSlotTime(1)).toBe('00:00')
     expect(padelHubSlotTime(14)).toBe('06:30')
     expect(padelHubSlotTime(15)).toBe('07:00')
     expect(padelHubSlotTime(45)).toBe('22:00')
   })
+})
 
+describe('parsePadelHubCourts', () => {
   it('keeps padel courts only and maps slots', () => {
     const courts = parsePadelHubCourts([
       {

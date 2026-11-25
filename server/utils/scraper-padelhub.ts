@@ -8,9 +8,24 @@ import { fromMinutes } from './time'
  */
 export async function scrapePadelHub(date: string, venue: { id: string }): Promise<Court[]> {
   const url = `https://padelhubsavapi.mokesta.lt/api/services/app/Padelhub/GetCourtReservations?date=${date}`
-  const data: any = await $fetch(url, { timeout: 15000 })
+  const data = await $fetch<{ result?: PadelHubCourt[] }>(url, { timeout: 15000 })
   if (!data?.result) throw new Error('No data returned from API')
   return parsePadelHubCourts(data.result, venue.id)
+}
+
+/** One court as returned by GetCourtReservations (fields we use only). */
+export interface PadelHubCourt {
+  id: number
+  name: string | null
+  /** Court category, e.g. "Padelis" or "Skvosas" */
+  tab: string | null
+  times: PadelHubTime[]
+}
+
+export interface PadelHubTime {
+  timeIdentifier: number
+  isReserved: boolean
+  price: number | null
 }
 
 /**
@@ -21,7 +36,7 @@ export function padelHubSlotTime(timeIdentifier: number): string {
   return fromMinutes((timeIdentifier - 1) * 30)
 }
 
-export function parsePadelHubCourts(result: any[], venueId: string): Court[] {
+export function parsePadelHubCourts(result: PadelHubCourt[], idPrefix: string): Court[] {
   const courts: Court[] = []
   for (const court of result) {
     // Only include padel courts (skip squash)
@@ -31,14 +46,14 @@ export function parsePadelHubCourts(result: any[], venueId: string): Court[] {
     const isDoubles = name.toLowerCase().includes('dvejet')
     const isSingles = name.toLowerCase().includes('vienet')
 
-    const slots: TimeSlot[] = court.times.map((t: any) => ({
+    const slots: TimeSlot[] = court.times.map(t => ({
       time: padelHubSlotTime(t.timeIdentifier),
       available: !t.isReserved,
       price: t.price ?? null,
     }))
 
     courts.push({
-      id: `${venueId}-${court.id}`,
+      id: `${idPrefix}-${court.id}`,
       name: name
         .replace(/Padelio (?:dvejetų|vienetų) kortas\s*/i, '')
         .replace(/\s*[„“”",]+\s*/g, ' ')
