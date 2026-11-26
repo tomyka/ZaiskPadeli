@@ -9,16 +9,16 @@
     <header class="court-lines sticky top-0 z-50 shrink-0 bg-ink shadow-md">
       <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-[100rem] lg:px-8">
         <div class="flex h-14 items-center justify-between">
-          <!-- Logo "Paukščiukas" (#51): the mark is the Ž of Žaisk, its háček a bounce with the ball at the bounce point -->
-          <a href="/" aria-label="Žaisk Padelį" class="group flex select-none items-baseline">
-            <svg viewBox="52 10 98 162" class="h-[25.9px] w-[15.7px] shrink-0 overflow-visible" aria-hidden="true">
-              <path d="M56 72 H146 V94 L86 150 H146 V172 H56 V150 L116 94 H56 Z" class="fill-white"/>
+          <!-- Logo "Paukščiukas" (#51): the Ž of Žaisk, its háček a bounce with the ball at the bounce point -->
+          <a href="/" aria-label="Žaisk Padelį"
+            class="group flex select-none items-baseline font-display text-[22px] font-bold uppercase leading-none tracking-wide text-white">
+            <!-- The font's own Z, so the Ž matches the other letters; only the háček (a bounce, ball at its point) is drawn -->
+            <span class="relative">Z<svg viewBox="62 13 78 58" class="absolute left-[-0.006em] top-[-0.16em] h-[0.312em] w-[0.42em] overflow-visible" aria-hidden="true">
               <g class="logo-bounce">
-                <path d="M67 18 L101 46 L135 18" fill="none" class="stroke-ball" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="101" cy="48" r="16" class="fill-ball stroke-ink" stroke-width="5"/>
+                <path d="M68 19 L101 46 L134 19" fill="none" class="stroke-ball" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="101" cy="48" r="18" class="fill-ball stroke-ink" stroke-width="4.5"/>
               </g>
-            </svg>
-            <span class="font-display text-[22px] font-bold uppercase leading-none tracking-wide text-white">aisk <span class="text-ball">Padelį</span></span>
+            </svg></span>aisk&nbsp;<span class="text-ball">Padelį</span>
           </a>
           <div class="flex items-center">
             <ClientOnly><InstallButton /></ClientOnly>
