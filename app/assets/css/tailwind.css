@@ -50,3 +50,16 @@
     linear-gradient(90deg, transparent 49.8%, rgba(255, 255, 255, 0.10) 49.8% 50.2%, transparent 50.2%),
     linear-gradient(0deg, transparent 38%, rgba(255, 255, 255, 0.07) 38% 40%, transparent 40%);
 }
+
+/* Logo (#51): hovering the header logo bounces the háček ball once */
+@media (prefers-reduced-motion: no-preference) {
+  .group:hover .logo-bounce {
+    animation: logo-bounce 0.5s ease-out;
+  }
+}
+
+@keyframes logo-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-14px); }
+  70% { transform: translateY(2px); }
+}

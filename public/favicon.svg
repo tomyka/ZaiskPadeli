@@ -1,22 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 40">
-  <!-- Racket head frame -->
-  <ellipse cx="16" cy="14" rx="11" ry="12" fill="#ea580c"/>
-  <!-- Racket face -->
-  <ellipse cx="16" cy="14" rx="8.5" ry="9.5" fill="#fb923c"/>
-  <!-- Perforations -->
-  <circle cx="13" cy="11" r="1.1" fill="#ea580c"/>
-  <circle cx="16" cy="11" r="1.1" fill="#ea580c"/>
-  <circle cx="19" cy="11" r="1.1" fill="#ea580c"/>
-  <circle cx="11.5" cy="14.5" r="1.1" fill="#ea580c"/>
-  <circle cx="15" cy="14.5" r="1.1" fill="#ea580c"/>
-  <circle cx="18.5" cy="14.5" r="1.1" fill="#ea580c"/>
-  <circle cx="13" cy="18" r="1.1" fill="#ea580c"/>
-  <circle cx="16" cy="18" r="1.1" fill="#ea580c"/>
-  <circle cx="19" cy="18" r="1.1" fill="#ea580c"/>
-  <!-- Handle -->
-  <rect x="14" y="25" width="4" height="13" rx="2" fill="#d1d5db"/>
-  <!-- Grip lines -->
-  <line x1="14" y1="28.5" x2="18" y2="28.5" stroke="#111827" stroke-width="0.8" stroke-linecap="round"/>
-  <line x1="14" y1="31.5" x2="18" y2="31.5" stroke="#111827" stroke-width="0.8" stroke-linecap="round"/>
-  <line x1="14" y1="34.5" x2="18" y2="34.5" stroke="#111827" stroke-width="0.8" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Žaisk Padelį mark ("Paukščiukas"): a Ž whose háček is a bounce, the ball at the bounce point -->
+  <rect width="200" height="200" rx="44" fill="#111827"/>
+  <g transform="translate(100 100) scale(1.06) translate(-102 -92)"><path d="M58 84 H142 L60 160 H146" fill="none" stroke="#ffffff" stroke-width="28" stroke-linejoin="miter"/><path d="M64 16 L100 48 L136 16" fill="none" stroke="#fb923c" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="50" r="19" fill="#fb923c" stroke="#111827" stroke-width="6"/></g>
 </svg>

@@ -117,10 +117,16 @@
     <!-- ═══ RESULTS ═══ -->
     <div class="min-w-0 lg:flex-1">
       <div v-if="pending" class="flex flex-col items-center justify-center py-24">
-        <div class="relative">
-          <div class="h-12 w-12 rounded-full border-[3px] border-court-line"></div>
-          <div class="absolute inset-0 h-12 w-12 animate-spin rounded-full border-[3px] border-transparent border-t-ball"></div>
-        </div>
+        <!-- Loading (#51, "Atšokimas"): a court from above, the ball bouncing along a Z off the glass -->
+        <svg viewBox="0 0 200 200" class="h-20 w-20" aria-hidden="true">
+          <rect x="26" y="40" width="148" height="120" rx="14" fill="none" class="stroke-court-line" stroke-width="6"/>
+          <line x1="100" y1="40" x2="100" y2="160" class="stroke-court-line" stroke-width="3" stroke-dasharray="6 7"/>
+          <path d="M46 66 H160 L46 134 H154" fill="none" class="stroke-ball" stroke-opacity="0.35" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle r="15" class="fill-ball motion-reduce:hidden">
+            <animateMotion dur="1.6s" repeatCount="indefinite" keyPoints="0;1" keyTimes="0;1" calcMode="linear" path="M46 66 H160 L46 134 H154"/>
+          </circle>
+          <circle cx="154" cy="134" r="15" class="hidden fill-ball motion-reduce:inline"/>
+        </svg>
         <p class="mt-4 text-sm font-medium text-gray-600">Ieškoma laisvų aikštelių...</p>
       </div>
 

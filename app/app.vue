@@ -9,19 +9,16 @@
     <header class="court-lines sticky top-0 z-50 shrink-0 bg-ink shadow-md">
       <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:max-w-[100rem] lg:px-8">
         <div class="flex h-14 items-center justify-between">
-          <a href="/" class="group flex select-none items-center gap-2.5">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 32" class="h-7 w-5 shrink-0 transition-transform duration-300 group-hover:rotate-[-8deg]" aria-hidden="true">
-              <ellipse cx="12" cy="10.5" rx="9" ry="10" class="fill-ball-deep"/>
-              <ellipse cx="12" cy="10.5" rx="7" ry="7.8" class="fill-ball"/>
-              <circle cx="9.5" cy="8" r="1" class="fill-ball-deep"/><circle cx="12" cy="8" r="1" class="fill-ball-deep"/><circle cx="14.5" cy="8" r="1" class="fill-ball-deep"/>
-              <circle cx="9.5" cy="11" r="1" class="fill-ball-deep"/><circle cx="12" cy="11" r="1" class="fill-ball-deep"/><circle cx="14.5" cy="11" r="1" class="fill-ball-deep"/>
-              <circle cx="9.5" cy="14" r="1" class="fill-ball-deep"/><circle cx="12" cy="14" r="1" class="fill-ball-deep"/><circle cx="14.5" cy="14" r="1" class="fill-ball-deep"/>
-              <rect x="10.5" y="19" width="3" height="10" rx="1.5" class="fill-ink-muted"/>
-              <line x1="10.5" y1="22" x2="13.5" y2="22" class="stroke-ink" stroke-width="0.6"/><line x1="10.5" y1="25" x2="13.5" y2="25" class="stroke-ink" stroke-width="0.6"/>
+          <!-- Logo "Paukščiukas" (#51): the mark is the Ž of Žaisk, its háček a bounce with the ball at the bounce point -->
+          <a href="/" aria-label="Žaisk Padelį" class="group flex select-none items-baseline">
+            <svg viewBox="44 8 120 168" class="h-[26px] w-[18.6px] shrink-0 overflow-visible" aria-hidden="true">
+              <path d="M58 84 H142 L60 160 H146" fill="none" class="stroke-white" stroke-width="24" stroke-linejoin="miter"/>
+              <g class="logo-bounce">
+                <path d="M66 18 L100 48 L134 18" fill="none" class="stroke-ball" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="100" cy="50" r="16" class="fill-ball stroke-ink" stroke-width="5"/>
+              </g>
             </svg>
-            <span class="font-display text-[22px] font-bold uppercase tracking-wide text-white">
-              Žaisk <span class="text-ball">Padelį</span>
-            </span>
+            <span class="font-display text-[22px] font-bold uppercase leading-none tracking-wide text-white">aisk <span class="text-ball">Padelį</span></span>
           </a>
           <div class="flex items-center">
             <ClientOnly><InstallButton /></ClientOnly>

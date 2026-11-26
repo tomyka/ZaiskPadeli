@@ -141,6 +141,10 @@ Check new UI in a real browser at phone and desktop widths, including open, hove
 
 Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional municipality, changed only through its moves `chooseCounty`, `chooseMunicipality`, `locateAt`), `selectedDate`, `fromTime`, `duration`, `filterType`, `filterIndoor`, `selectedKey` (the open session). The computed `view` = `buildAvailabilityView(venues, filters, now)` applies all of them; the page only binds it. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
 
+### Logo
+
+"Paukščiukas" (#51): the Ž of Žaisk, its háček a bounce with the ball at the bounce point (white Z, ball-orange háček and ball, an ink ring around the ball). In the header the mark *is* the Ž (`app.vue`: mark + "aisk Padelį"); hovering it bounces the ball. `public/favicon.svg` is the source for the tab icon. `icon-192.png` / `icon-512.png` are full-bleed with the mark inside the maskable safe zone, and `favicon.ico` is 32 px. All were rendered from the same SVG at exact size in headless Chrome (`.claude/tools/browse.mjs`, viewport = icon size). Below ~48 px use the bold variant (thicker strokes, no ball seam). The loading state uses the runner-up concept, "Atšokimas": a court from above with the ball bouncing along a Z (`index.vue`, static under reduced motion).
+
 ### Installable app (PWA)
 
 `@vite-pwa/nuxt`, configured in the `pwa` block of `nuxt.config.ts`. `<NuxtPwaManifest />` in `app.vue` links the manifest (without it browsers never offer to install), and the module's client plugin registers the service worker. Rules for the service worker, all for a server-rendered app on Vercel:
