@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import { addDays, dayMinutes } from '~~/server/utils/time'
 import { chipPrice, type SelectedSession } from '~/utils/availability'
-import { formatPrice, ltPlural } from '~/utils/format'
+import { formatPrice, ltPlural, nightTag } from '~/utils/format'
 import { sessionEnd } from '~/utils/sessions'
 
 /** One bookable session: free courts with price and booking link, plus other start times */
@@ -64,8 +64,8 @@ const others = computed(() => props.session.others.map((s) => {
   const priceStr = price !== null ? formatPrice(price) : ''
   return {
     time: s.time,
-    priceText: [priceStr, singlesOnly ? '1v1' : ''].filter(Boolean).join(' · '),
-    label: [s.time, priceStr, singlesOnly ? 'tik 1v1 kortai' : ''].filter(Boolean).join(', '),
+    priceText: [nightTag(s.time), priceStr, singlesOnly ? '1v1' : ''].filter(Boolean).join(' · '),
+    label: [s.time, nightTag(s.time), priceStr, singlesOnly ? 'tik 1v1 kortai' : ''].filter(Boolean).join(', '),
   }
 }))
 </script>

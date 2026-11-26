@@ -65,12 +65,12 @@
           <div class="grid grid-cols-4 gap-1.5 sm:grid-cols-8 lg:grid-cols-[repeat(auto-fill,4.5rem)]">
             <button v-for="s in starts" :key="s.time" type="button"
               :aria-current="s.time === selectedTime ? 'true' : undefined"
-              :aria-label="[s.time, s.price !== null ? formatPrice(s.price) : '', court.name].filter(Boolean).join(', ')"
+              :aria-label="[s.time, nightTag(s.time), s.price !== null ? formatPrice(s.price) : '', court.name].filter(Boolean).join(', ')"
               :class="['flex min-h-[3rem] flex-col items-center justify-center rounded-xl border transition active:scale-[0.97]',
                 s.time === selectedTime ? SELECTED : IDLE]"
               @click="emit('pick', s.time)">
               <span class="font-display text-[19px] font-bold leading-none tabular-nums">{{ s.time }}</span>
-              <span v-if="s.price !== null" class="mt-0.5 text-[11px] font-medium leading-none" :class="s.time === selectedTime ? 'text-ink/70' : 'text-ink-muted'">{{ formatPrice(s.price) }}</span>
+              <span v-if="s.price !== null || nightTag(s.time)" class="mt-0.5 text-[11px] font-medium leading-none" :class="s.time === selectedTime ? 'text-ink/70' : 'text-ink-muted'">{{ [nightTag(s.time), s.price !== null ? formatPrice(s.price) : ''].filter(Boolean).join(' · ') }}</span>
             </button>
           </div>
         </div>
@@ -81,11 +81,11 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
-            {{ venue.address }}
+            {{ venue.address }}<span class="sr-only"> (atsidaro naujame lange)</span>
           </a>
           <a :href="venue.bookingUrl" target="_blank" rel="noopener"
             class="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-ball-text hover:text-ball-deep">
-            Atidaryti klubo rezervacijas
+            Atidaryti klubo rezervacijas<span class="sr-only"> (atsidaro naujame lange)</span>
             <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
             </svg>
@@ -100,7 +100,7 @@
 import type { Court, Venue } from '~~/server/utils/types'
 import { venueAccent } from '~~/server/utils/venues'
 import { SLOT_MIN } from '~~/server/utils/time'
-import { formatPrice, ltPlural } from '~/utils/format'
+import { formatPrice, ltPlural, nightTag } from '~/utils/format'
 import { staleNote, venueProblem } from '~/utils/venue-status'
 import { sessionEnd, type StripCell, type VenueSessions } from '~/utils/sessions'
 import { chipPrice, venuePricesByKind } from '~/utils/availability'
@@ -158,8 +158,8 @@ const previewStarts = computed(() =>
     const priceStr = price !== null ? formatPrice(price) : ''
     return {
       time: s.time,
-      priceText: [priceStr, singlesOnly ? '1v1' : ''].filter(Boolean).join(' · '),
-      label: [s.time, priceStr, singlesOnly ? 'tik 1v1 kortai' : '', props.venue.name].filter(Boolean).join(', '),
+      priceText: [nightTag(s.time), priceStr, singlesOnly ? '1v1' : ''].filter(Boolean).join(' · '),
+      label: [s.time, nightTag(s.time), priceStr, singlesOnly ? 'tik 1v1 kortai' : '', props.venue.name].filter(Boolean).join(', '),
     }
   })
 )

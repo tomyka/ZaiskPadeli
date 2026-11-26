@@ -1,3 +1,6 @@
+// Relative import (not ~~/) so vitest can load this file without Nuxt's aliases
+import { dayMinutes } from '../../server/utils/time'
+
 /** "14:05" — clock time of an ISO timestamp in Lithuanian time (same on server and client) */
 export function formatClock(iso: string): string {
   const d = new Date(iso)
@@ -18,4 +21,9 @@ export function ltPlural(n: number, one: string, few: string, many: string): str
   if (mod10 === 1) return one
   if (mod10 >= 2) return few
   return many
+}
+
+/** "naktį" for a start after midnight: it belongs to the night after the selected day, so say so */
+export function nightTag(time: string): string {
+  return dayMinutes(time) >= 1440 ? 'naktį' : ''
 }

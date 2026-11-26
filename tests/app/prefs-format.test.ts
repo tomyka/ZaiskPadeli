@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PREFS, parsePrefs } from '../../app/utils/prefs'
-import { formatPrice, ltPlural } from '../../app/utils/format'
+import { formatPrice, ltPlural, nightTag } from '../../app/utils/format'
 
 describe('parsePrefs', () => {
   it('returns defaults for missing or non-object values', () => {
@@ -47,5 +47,11 @@ describe('ltPlural', () => {
     expect([1, 2, 9, 10, 11, 15, 20, 21, 22, 111].map(f)).toEqual([
       'kortas', 'kortai', 'kortai', 'kortų', 'kortų', 'kortų', 'kortų', 'kortas', 'kortai', 'kortų',
     ])
+  })
+})
+
+describe('nightTag', () => {
+  it('marks starts after midnight, which belong to the night after the selected day', () => {
+    expect(['23:30', '00:00', '01:30', '06:00'].map(nightTag)).toEqual(['', 'naktį', 'naktį', ''])
   })
 })
