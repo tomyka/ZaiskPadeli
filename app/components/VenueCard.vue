@@ -98,7 +98,7 @@
 
 <script setup lang="ts">
 import type { Court, Venue } from '~~/server/utils/types'
-import { venueInfo } from '~~/server/utils/venues'
+import { venueAccent } from '~~/server/utils/venues'
 import { SLOT_MIN } from '~~/server/utils/time'
 import { formatPrice, ltPlural } from '~/utils/format'
 import { staleNote, venueProblem } from '~/utils/venue-status'
@@ -128,7 +128,7 @@ const STRIP_CLASS: Record<StripCell['state'], string> = {
   past: 'bg-court-faint',
 }
 
-const accent = computed(() => venueInfo(props.venue.id)?.color ?? '#9ca3af')
+const accent = computed(() => venueAccent(props.venue.id))
 
 const problem = computed(() => venueProblem(props.venue))
 

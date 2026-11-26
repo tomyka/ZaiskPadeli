@@ -1,4 +1,4 @@
-import { PROTECTED_SITES, type ProtectedDay, type ProtectedSiteId } from './protected-sites'
+import { protectedSite, type ProtectedDay, type ProtectedSiteId } from './protected-sites'
 
 /**
  * One day of a Cloudflare-protected site (see protected-sites.ts), checked and ready to parse.
@@ -9,10 +9,7 @@ import { PROTECTED_SITES, type ProtectedDay, type ProtectedSiteId } from './prot
  * Throws a descriptive error on any failure, whichever way the day was fetched.
  */
 export async function fetchProtectedDay<S extends ProtectedSiteId>(site: S, date: string): Promise<ProtectedDay<S>> {
-  const entry = PROTECTED_SITES[site] as unknown as {
-    fetch: (date: string, secrets: (name: string) => string | undefined) => Promise<ProtectedDay<S>>
-    check: (day: ProtectedDay<S>) => void
-  }
+  const entry = protectedSite(site)
   const day = (await viaWorker<ProtectedDay<S>>(site, date)) ?? await entry.fetch(date, name => process.env[name])
   entry.check(day)
   return day

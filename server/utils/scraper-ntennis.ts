@@ -2,6 +2,7 @@ import type { Court } from './types'
 import { parseNTennisGrid } from './ntennis'
 import { fetchNTennisGrid, type NTennisSite } from './ntennis-fetch'
 import { fetchProtectedDay } from './protected-fetch'
+import type { NTennisProtectedSite } from './protected-sites'
 import { currentMinutesFor } from './time'
 
 /**
@@ -12,7 +13,7 @@ import { currentMinutesFor } from './time'
  * is only for sites whose login page stops exposing those hidden inputs.
  * A site behind Cloudflare is named by its protected-sites.ts entry instead (`protected`).
  */
-export type NTennisConfig = (NTennisSite | { protected: 'kaunopadelis' }) & {
+export type NTennisConfig = (NTennisSite | { protected: NTennisProtectedSite }) & {
   /** The court name is a <span> next to extra text (A1Padel) — read only that span */
   nameFromSpan?: boolean
 }

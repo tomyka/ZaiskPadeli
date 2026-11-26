@@ -1,4 +1,5 @@
 import { extractSetCookies } from './cookies'
+import { BROWSER_UA as UA } from './user-agent'
 
 /**
  * GO Padel (Alytus) day fetch: the club's public API, used the way its booking page does.
@@ -13,7 +14,6 @@ import { extractSetCookies } from './cookies'
 
 const API = 'https://api.gopadel.lt'
 export const GOPADEL_FACILITY_ID = 1
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 export interface GoPadelFacility {
   id: number

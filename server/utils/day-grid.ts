@@ -1,5 +1,5 @@
 import type { TimeSlot } from './types'
-import { dayMinutes, fromMinutes, isSlotOver, SLOT_MIN, toEndMinutes, toMinutes } from './time'
+import { fromMinutes, isSlotOver, SLOT_MIN, toEndMinutes, toMinutes } from './time'
 
 /**
  * A venue's day as half-hour slots: the one place scrapers turn upstream data into TimeSlots.
@@ -43,24 +43,38 @@ export function openingSlots(open: string, close: string): string[] {
   return times
 }
 
-/** A booked range as "HH:MM" clock times; the end may be after midnight */
+/** A clock-time range, e.g. a booking or a price segment; the end may be after midnight */
 export interface ClockRange { start: string; end: string }
+
+/** [start, end) in minutes on the clock; an end at or before the start is after midnight */
+function span({ start, end }: ClockRange): [number, number] {
+  const s = toMinutes(start)
+  let e = toEndMinutes(end)
+  if (e <= s) e += 1440
+  return [s, e]
+}
+
+/** Does [from, from + length) overlap [s, e)? Also tries the clock's next lap, for ranges past midnight */
+const overlaps = (from: number, length: number, [s, e]: [number, number]) =>
+  [from, from + 1440].some(m => m < e && m + length > s)
 
 /** Predicate: does the half hour starting at `time` overlap any booked range? */
 export function bookedAt(ranges: Iterable<ClockRange>): (time: string) => boolean {
-  const spans = [...ranges].map(({ start, end }) => {
-    const s = dayMinutes(start)
-    let e = dayMinutes(end)
-    if (e <= s) e += 1440 // ends at or after midnight
-    return [s, e] as const
-  })
+  const spans = [...ranges].map(span)
   return (time) => {
-    const m = dayMinutes(time)
-    return spans.some(([s, e]) => m < e && m + SLOT_MIN > s)
+    const m = toMinutes(time)
+    return spans.some(sp => overlaps(m, SLOT_MIN, sp))
   }
 }
 
+/** Does a slot starting at `time` start inside the range (e.g. a price segment "22:00"–"02:00")? */
+export function startsWithin(time: string, range: ClockRange): boolean {
+  return overlaps(toMinutes(time), 1, span(range))
+}
+
 /** Upstream per-hour price → our per-half-hour price */
+export function perHalfHour(perHour: number): number
+export function perHalfHour(perHour: number | null | undefined): number | null
 export function perHalfHour(perHour: number | null | undefined): number | null {
   return perHour == null ? null : perHour / 2
 }

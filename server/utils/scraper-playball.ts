@@ -1,7 +1,7 @@
 import type { Court } from './types'
-import { bookedAt, openingSlots, toSlots } from './day-grid'
+import { bookedAt, openingSlots, startsWithin, toSlots } from './day-grid'
 import { courtTypeFromName } from './parse'
-import { currentMinutesFor, dayOfWeek, toEndMinutes, toMinutes } from './time'
+import { currentMinutesFor, dayOfWeek } from './time'
 import { BROWSER_UA } from './user-agent'
 
 /**
@@ -12,8 +12,8 @@ import { BROWSER_UA } from './user-agent'
  *   GET /api/v1/clubs/{id}/price-policies?date=…         → price segments by weekday and time
  *
  * Times carry a "Z" but are local clock times; the site strips it too (normalizeTimeOfDay).
- * Weekdays: 1 = Monday … 7 = Sunday. Segment prices are per half hour: 4Padel's 11 / 18
- * match the €22–36 per hour of nearby clubs, while per hour they would be half of everyone else's.
+ * Weekdays: 1 = Monday … 7 = Sunday. Segment prices are per half hour: checked 2026-11-26 on
+ * 4Padel's booking page, where an €11 segment books as 30 min €11, 60 min €22, 90 min €33.
  */
 
 const API = 'https://playball.lt/api/v1'
@@ -59,13 +59,11 @@ export function buildPlayballCourts(day: PlayballDay, date: string, idPrefix: st
     && (!p.end_date || date <= isoDate(p.end_date)))
 
   const priceFor = (courtId: number, time: string): number | null => {
-    const slot = toMinutes(time)
     for (const p of policies) {
       if (!p.courts.some(c => c.id === courtId)) continue
-      for (const s of p.price_segments) {
-        if (!s.days_of_week.includes(weekday)) continue
-        if (slot >= toMinutes(clock(s.start_time)) && slot < toEndMinutes(clock(s.end_time))) return s.price
-      }
+      const segment = p.price_segments.find(s =>
+        s.days_of_week.includes(weekday) && startsWithin(time, { start: clock(s.start_time), end: clock(s.end_time) }))
+      if (segment) return segment.price
     }
     return null
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookedAt, openingSlots, perHalfHour, toSlots } from '../../server/utils/day-grid'
+import { bookedAt, openingSlots, perHalfHour, startsWithin, toSlots } from '../../server/utils/day-grid'
 
 describe('openingSlots', () => {
   it('lays out half hours from opening to closing, including to midnight', () => {
@@ -30,6 +30,28 @@ describe('bookedAt', () => {
 
   it('catches a booking that starts mid-slot', () => {
     expect(bookedAt([{ start: '10:15', end: '10:45' }])('10:00')).toBe(true)
+  })
+
+  it('handles a night booking across 04:00 at a club open all night', () => {
+    const night = bookedAt([{ start: '03:00', end: '05:00' }])
+    expect(['02:30', '03:00', '04:00', '04:30', '05:00'].map(night)).toEqual([false, true, true, true, false])
+  })
+
+  it('does not spill a booking that ends at midnight into the next slot', () => {
+    expect(bookedAt([{ start: '23:00', end: '00:00' }])('00:00')).toBe(false)
+  })
+})
+
+describe('startsWithin', () => {
+  it('matches price segments that run past midnight', () => {
+    const late = { start: '22:00', end: '02:00' }
+    expect(['21:30', '22:00', '23:30', '00:30', '01:30', '02:00'].map(t => startsWithin(t, late)))
+      .toEqual([false, true, true, true, true, false])
+  })
+
+  it('treats a segment ending "00:00" as running to midnight', () => {
+    expect(startsWithin('23:30', { start: '21:00', end: '00:00' })).toBe(true)
+    expect(startsWithin('00:00', { start: '21:00', end: '00:00' })).toBe(false)
   })
 })
 

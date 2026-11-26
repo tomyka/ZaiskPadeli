@@ -18,7 +18,7 @@
  * calls the app's /api/cron/scrape — see `scheduled` below.
  */
 
-import { isProtectedSiteId, PROTECTED_SITES } from '../../server/utils/protected-sites'
+import { isProtectedSiteId, protectedSite } from '../../server/utils/protected-sites'
 import type { ScrapeReport } from '../../server/utils/types'
 
 interface Env {
@@ -94,7 +94,7 @@ export default {
       return json({ error: `Unknown site: ${site}` }, 400)
     }
 
-    const entry = PROTECTED_SITES[site] as { fetch: (date: string, secrets: (name: string) => string | undefined) => Promise<unknown>; check: (day: unknown) => void }
+    const entry = protectedSite(site)
     try {
       const day = await entry.fetch(date, name => (env as unknown as Record<string, string | undefined>)[name])
       try {

@@ -15,7 +15,7 @@ import { fetchGoPadelDay, type GoPadelDay } from './gopadel-fetch'
 /** Reads a credential by name: Worker secrets in the Worker, process.env on the server */
 export type Secrets = (name: string) => string | undefined
 
-interface ProtectedSite<T> {
+export interface ProtectedSite<T> {
   /** The day's raw data, fetched from the site itself */
   fetch: (date: string, secrets: Secrets) => Promise<T>
   /** Throws a reason when the data can't be used (whether fetched here or through the Worker) */
@@ -55,3 +55,11 @@ export type ProtectedDay<S extends ProtectedSiteId> = Awaited<ReturnType<(typeof
 export function isProtectedSiteId(id: string): id is ProtectedSiteId {
   return Object.hasOwn(PROTECTED_SITES, id)
 }
+
+/** A site's entry with its day type spelled out (indexing the table by a generic id loses it) */
+export function protectedSite<S extends ProtectedSiteId>(id: S): ProtectedSite<ProtectedDay<S>> {
+  return PROTECTED_SITES[id] as unknown as ProtectedSite<ProtectedDay<S>>
+}
+
+/** Protected sites that serve an nTennis grid */
+export type NTennisProtectedSite = { [S in ProtectedSiteId]: ProtectedDay<S> extends NTennisDay ? S : never }[ProtectedSiteId]

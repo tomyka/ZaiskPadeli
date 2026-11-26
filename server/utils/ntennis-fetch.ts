@@ -33,6 +33,7 @@ export interface NTennisGridResult {
   loginRejected: boolean
 }
 
+// Not BROWSER_UA: this exact string is what the Cloudflare-protected Kauno site has been accepting
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 const STEP_TIMEOUT_MS = 8_000 // up to 4 sequential steps — keep 4 × this under VENUE_DEADLINE_MS (scraper-all.ts)
 

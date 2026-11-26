@@ -347,7 +347,7 @@ export const VENUES = [
     address: 'Ozo g. 14C, Vilnius',
     municipality: 'Vilnius',
     bookingUrl: 'https://rezervacija.delfisportocentras.lt/',
-    indoor: true,
+    indoor: true, // 4 courts on the live grid (the test fixture is a 2-court sample)
     color: '#f97316',
   },
 ] as const satisfies readonly VenueInfo[]
@@ -358,6 +358,11 @@ const BY_ID = new Map<string, VenueInfo>(VENUES.map(v => [v.id, v]))
 
 export function venueInfo(id: string): VenueInfo | undefined {
   return BY_ID.get(id)
+}
+
+/** A venue's accent colour; neutral grey for an id not in the registry */
+export function venueAccent(id: string): string {
+  return BY_ID.get(id)?.color ?? '#9ca3af'
 }
 
 /** Municipalities that have at least one venue */

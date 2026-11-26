@@ -1,7 +1,8 @@
 import type { Court } from './types'
-import { bookedAt, openingSlots, perHalfHour, toSlots } from './day-grid'
+import { bookedAt, openingSlots, perHalfHour, startsWithin, toSlots } from './day-grid'
 import { courtTypeFromName } from './parse'
-import { currentMinutesFor, dayOfWeek, toEndMinutes, toMinutes } from './time'
+import { currentMinutesFor, dayOfWeek } from './time'
+import { BROWSER_UA } from './user-agent'
 
 /**
  * Generic Winero.lt scraper
@@ -10,7 +11,6 @@ import { currentMinutesFor, dayOfWeek, toEndMinutes, toMinutes } from './time'
  */
 
 const WINERO_BASE = 'https://www.winero.lt'
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const
 
@@ -37,11 +37,8 @@ export function parseOpeningHours(raw: string, date: string): { open: string; cl
 }
 
 function priceIn(slots: WineroTimeSlot[] | undefined, slotTime: string): number | null {
-  const slotMin = toMinutes(slotTime)
-  for (const ts of slots ?? []) {
-    if (slotMin >= toMinutes(ts.start_time) && slotMin < toEndMinutes(ts.end_time)) return perHalfHour(ts.price)
-  }
-  return null
+  const ts = slots?.find(s => startsWithin(slotTime, { start: s.start_time, end: s.end_time }))
+  return ts ? perHalfHour(ts.price) : null
 }
 
 /** Per-30-min price for a slot. Exception periods (date-ranged) take precedence over regular ones. */
@@ -97,7 +94,7 @@ export function buildWineroCourts(day: WineroDay, config: WineroArenaConfig, dat
 }
 
 async function getJson(url: string): Promise<any> {
-  const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(15_000) })
+  const res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(15_000) })
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
   return res.json()
 }
