@@ -141,6 +141,10 @@ Check new UI in a real browser at phone and desktop widths, including open, hove
 
 Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional municipality, changed only through its moves `chooseCounty`, `chooseMunicipality`, `locateAt`), `selectedDate`, `fromTime`, `duration`, `filterType`, `filterIndoor`, `selectedKey` (the open session). The computed `view` = `buildAvailabilityView(venues, filters, now)` applies all of them; the page only binds it. Courts with `indoor === undefined` are shown regardless of the indoor/outdoor filter.
 
+### Installable app (PWA)
+
+`@vite-pwa/nuxt`, configured in the `pwa` block of `nuxt.config.ts`. `<NuxtPwaManifest />` in `app.vue` links the manifest (without it browsers never offer to install), and the module's client plugin registers the service worker. The service worker suits a server-rendered app: no precached `/` navigation fallback (`navigateFallback: null`; a fallback to an unprecached URL breaks the worker), the build's JS/CSS/fonts/icons are precached, and pages and `/api/availability` are network-first, so the installed app opens offline with the last loaded day. Setting `workbox.globPatterns` replaces Workbox's defaults, so list every asset type you want precached. `app/components/InstallHint.vue` offers installing on phones: Chrome/Android's own prompt (`$pwa.install()`), or Share-menu instructions on iOS Safari; never inside the installed app, and a dismissal is kept in localStorage (`vite-pwa:hide-install`). `public/screenshot-*.png` are the manifest's install-dialog screenshots.
+
 ### Deployment
 
 ```bash

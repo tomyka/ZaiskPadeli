@@ -1,5 +1,7 @@
 <template>
   <div class="flex min-h-screen flex-col bg-court-bg">
+    <!-- <link rel="manifest">: without it browsers don't offer to install the app (#50) -->
+    <NuxtPwaManifest />
     <!-- Accent bar -->
     <div class="h-1 shrink-0 bg-ball"></div>
 
@@ -35,6 +37,7 @@
     </header>
 
     <main class="flex-1">
+      <ClientOnly><InstallHint /></ClientOnly>
       <NuxtPage />
     </main>
 
