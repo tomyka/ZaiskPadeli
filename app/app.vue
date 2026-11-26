@@ -23,21 +23,23 @@
               Žaisk <span class="text-ball">Padelį</span>
             </span>
           </a>
-          <!-- Donation lives in the header: a floating button covered time chips and the footer -->
-          <a href="https://revolut.me/tomyka" target="_blank" rel="noopener"
-            aria-label="Paremti projektą per Revolut (atsidaro naujame lange)"
-            class="inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-ink-muted transition hover:text-ball">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linejoin="round" d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" /><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17" />
-            </svg>
-            Paremti
-          </a>
+          <div class="flex items-center">
+            <ClientOnly><InstallButton /></ClientOnly>
+            <!-- Donation lives in the header: a floating button covered time chips and the footer -->
+            <a href="https://revolut.me/tomyka" target="_blank" rel="noopener"
+              aria-label="Paremti projektą per Revolut (atsidaro naujame lange)"
+              class="inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-ink-muted transition hover:text-ball">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                <path stroke-linejoin="round" d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" /><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17" />
+              </svg>
+              Paremti
+            </a>
+          </div>
         </div>
       </div>
     </header>
 
     <main class="flex-1">
-      <ClientOnly><InstallHint /></ClientOnly>
       <NuxtPage />
     </main>
 

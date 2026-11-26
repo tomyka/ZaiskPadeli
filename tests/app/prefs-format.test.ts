@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PREFS, parsePrefs } from '../../app/utils/prefs'
-import { formatPrice, ltPlural, nightTag } from '../../app/utils/format'
+import { formatPrice, formatUpdated, ltPlural, nightTag } from '../../app/utils/format'
 
 describe('parsePrefs', () => {
   it('returns defaults for missing or non-object values', () => {
@@ -53,5 +53,13 @@ describe('ltPlural', () => {
 describe('nightTag', () => {
   it('marks starts after midnight, which belong to the night after the selected day', () => {
     expect(['23:30', '00:00', '01:30', '06:00'].map(nightTag)).toEqual(['', 'naktį', 'naktį', ''])
+  })
+})
+
+describe('formatUpdated', () => {
+  it('shows only the time for today, and the date too for an earlier day (Lithuanian time)', () => {
+    expect(formatUpdated('2026-11-26T10:05:00Z', '2026-11-26')).toBe('12:05')
+    expect(formatUpdated('2026-11-25T10:05:00Z', '2026-11-26')).toBe('11-25 12:05')
+    expect(formatUpdated('2026-11-25T22:30:00Z', '2026-11-26')).toBe('00:30') // already the 26th in Vilnius
   })
 })

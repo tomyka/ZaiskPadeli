@@ -143,7 +143,14 @@ Refs: `location` (a `Location` from `app/utils/location.ts`: county + optional m
 
 ### Installable app (PWA)
 
-`@vite-pwa/nuxt`, configured in the `pwa` block of `nuxt.config.ts`. `<NuxtPwaManifest />` in `app.vue` links the manifest (without it browsers never offer to install), and the module's client plugin registers the service worker. The service worker suits a server-rendered app: no precached `/` navigation fallback (`navigateFallback: null`; a fallback to an unprecached URL breaks the worker), the build's JS/CSS/fonts/icons are precached, and pages and `/api/availability` are network-first, so the installed app opens offline with the last loaded day. Setting `workbox.globPatterns` replaces Workbox's defaults, so list every asset type you want precached. `app/components/InstallHint.vue` offers installing on phones: Chrome/Android's own prompt (`$pwa.install()`), or Share-menu instructions on iOS Safari; never inside the installed app, and a dismissal is kept in localStorage (`vite-pwa:hide-install`). `public/screenshot-*.png` are the manifest's install-dialog screenshots.
+`@vite-pwa/nuxt`, configured in the `pwa` block of `nuxt.config.ts`. `<NuxtPwaManifest />` in `app.vue` links the manifest (without it browsers never offer to install), and the module's client plugin registers the service worker. Rules for the service worker, all for a server-rendered app on Vercel:
+- No navigation fallback (`navigateFallback: null`): there is no prebuilt index.html, and a fallback to an unprecached URL breaks the worker.
+- Only icons are precached. Build chunks and fonts (`/_nuxt/`, hashed) are cache-first in a long-lived runtime cache, so a page cached before a deploy still finds its chunks: each deploy replaces the precache and Vercel stops serving old files. `/_nuxt/builds/` (the mutable app-version manifest) is excluded.
+- Pages and `/api/availability` are network-first with no timeout: the cache answers only without a network. The page then says it is offline, shows the data's date when it isn't today, and refetches when the kept page carries another day's data.
+- `registerType: 'prompt'` with no prompt UI: a new worker takes over the next time the app is opened, instead of reloading open pages.
+- Setting `workbox.globPatterns` replaces Workbox's defaults.
+
+`app/components/InstallButton.vue` puts "Įdiegti" in the header on phones (never inside the installed app): Chrome/Android's own prompt via `$pwa.install()`, or Share-menu steps on iPhone/iPad (any browser since iOS 16.4). `public/screenshot-*.png` are the manifest's install-dialog screenshots.
 
 ### Deployment
 

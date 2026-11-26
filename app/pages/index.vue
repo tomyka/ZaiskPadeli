@@ -133,6 +133,11 @@
       </div>
 
       <template v-else>
+        <!-- Installed app without a network: the data is the last copy loaded (its time is shown) -->
+        <p v-if="!online" role="status"
+          class="mb-3 rounded-xl border border-court-line bg-white px-3.5 py-2.5 text-sm text-gray-600">
+          <b class="text-ink">Nėra interneto ryšio.</b> Rodomi paskutiniai įkelti duomenys.
+        </p>
         <div class="mb-3 flex items-center justify-between gap-2">
           <p class="text-sm text-gray-600 lg:text-[15px]">
             <b class="text-gray-900 tabular-nums">{{ view.bookableCount }} {{ ltPlural(view.bookableCount, 'vieta', 'vietos', 'vietų') }}</b>
@@ -143,7 +148,7 @@
             <svg :class="['h-4 w-4', refreshing ? 'animate-spin' : '']" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
-            <span v-if="data" class="tabular-nums">{{ formatClock(data.fetchedAt) }}</span>
+            <span v-if="data" class="tabular-nums">{{ formatUpdated(data.fetchedAt, today) }}</span>
           </button>
         </div>
 
@@ -220,7 +225,7 @@
 
         <!-- Data freshness indicator -->
         <p v-if="data" class="mt-6 text-center text-[11px] text-gray-600">
-          Atnaujinta {{ formatClock(data.fetchedAt) }}{{ data.fromCache && data.cacheAgeSeconds ? ` (prieš ${Math.max(1, Math.round(data.cacheAgeSeconds / 60))} min)` : '' }}
+          Atnaujinta {{ formatUpdated(data.fetchedAt, today) }}{{ data.fromCache && data.cacheAgeSeconds ? ` (prieš ${Math.max(1, Math.round(data.cacheAgeSeconds / 60))} min)` : '' }}
         </p>
       </template>
     </div>
@@ -269,7 +274,7 @@ import { COUNTY_OPTIONS, EVERYWHERE, chooseCounty, chooseMunicipality, locateAt,
 import { MAX_DAYS_AHEAD, addDays, currentMinutesFor, dayOfWeek, isValidIsoDate, todayLT } from '~~/server/utils/time'
 import { buildAvailabilityView, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
-import { formatClock, ltPlural } from '~/utils/format'
+import { formatUpdated, ltPlural } from '~/utils/format'
 import { venueAccent } from '~~/server/utils/venues'
 
 // Remembered across visits (cookie): county, municipality, duration, court type, indoor
@@ -344,6 +349,20 @@ async function refresh() {
   refreshing.value = true
   try { await rawRefresh() } finally { refreshing.value = false }
 }
+
+const online = ref(true)
+const setOnline = () => { online.value = navigator.onLine }
+onMounted(() => {
+  setOnline()
+  window.addEventListener('online', setOnline)
+  window.addEventListener('offline', setOnline)
+  // A page the installed app kept from an earlier day carries that day's data: load the selected date's
+  if (data.value && data.value.date !== selectedDate.value) refresh()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('online', setOnline)
+  window.removeEventListener('offline', setOnline)
+})
 
 const view = computed(() => buildAvailabilityView(
   data.value?.venues ?? [],

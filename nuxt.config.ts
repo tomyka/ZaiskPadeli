@@ -39,9 +39,10 @@ export default defineNuxtConfig({
   // Installable app (#50). The page links the manifest via <NuxtPwaManifest /> in app.vue,
   // and the module's client plugin registers the service worker.
   pwa: {
-    registerType: 'autoUpdate',
-    // Captures the browser's install prompt for our own hint (InstallHint.vue); a dismissal is
-    // remembered in localStorage under 'vite-pwa:hide-install'
+    // A new service worker waits until the app is next opened instead of reloading open pages
+    // mid-session ('autoUpdate' would): the page itself always comes from the network when online
+    registerType: 'prompt',
+    // Captures Chrome's install prompt for the header's "Įdiegti" button (InstallButton.vue)
     client: { installPrompt: true },
     manifest: {
       id: '/',
@@ -60,7 +61,7 @@ export default defineNuxtConfig({
       icons: [
         { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-        // The artwork sits well inside the central 80% safe zone on a full-bleed background
+        // The artwork sits within ~170px of the centre, inside the 205px maskable safe zone
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
       screenshots: [
@@ -71,22 +72,31 @@ export default defineNuxtConfig({
     workbox: {
       // Server-rendered pages: there is no prebuilt index.html to answer every navigation with
       navigateFallback: null,
-      // Setting globPatterns replaces Workbox's defaults; the module adds its build-manifest JSON
-      globPatterns: ['**/*.{js,css,svg,png,ico,woff2}'],
+      // Only icons are precached (setting globPatterns replaces Workbox's defaults; the module adds
+      // its build-manifest JSON). App chunks are cached at runtime instead, see below.
+      globPatterns: ['**/*.{svg,png,ico}'],
       globIgnores: ['screenshot-*.png'],
       runtimeCaching: [
         {
-          // Pages: always fresh when online; the last one opens offline
-          urlPattern: ({ request }) => request.mode === 'navigate',
-          handler: 'NetworkFirst',
-          options: { cacheName: 'pages', networkTimeoutSeconds: 5, expiration: { maxEntries: 10 } },
+          // Hashed, immutable build chunks and fonts, kept across deploys: a page cached before a
+          // deploy still finds the chunks it references (each deploy wipes the precache, and
+          // Vercel stops serving the old files). builds/ holds the mutable app-version manifest.
+          urlPattern: ({ url }) => url.pathname.startsWith('/_nuxt/') && !url.pathname.startsWith('/_nuxt/builds/'),
+          handler: 'CacheFirst',
+          options: { cacheName: 'assets', expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 } },
         },
         {
-          // Availability: fresh when online; offline (or a dead network) shows the last loaded day,
-          // whose "Atnaujinta HH:MM" says how old it is
+          // Pages: from the network whenever there is one (no timeout); the last one opens offline
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
+          options: { cacheName: 'pages', expiration: { maxEntries: 5, maxAgeSeconds: 7 * 24 * 60 * 60 } },
+        },
+        {
+          // Availability: from the network whenever there is one, however slow the scrape; without
+          // a network, the last loaded copy of that date (the page says it is offline and how old)
           urlPattern: ({ url }) => url.pathname === '/api/availability',
           handler: 'NetworkFirst',
-          options: { cacheName: 'availability', networkTimeoutSeconds: 10, expiration: { maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 } },
+          options: { cacheName: 'availability', expiration: { maxEntries: 20, maxAgeSeconds: 24 * 60 * 60 } },
         },
       ],
     },

@@ -27,3 +27,11 @@ export function ltPlural(n: number, one: string, few: string, many: string): str
 export function nightTag(time: string): string {
   return dayMinutes(time) >= 1440 ? 'naktį' : ''
 }
+
+/** When data was fetched: "14:05" if today (LT), else "11-25 14:05", e.g. a day shown offline */
+export function formatUpdated(iso: string, today: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const day = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Vilnius' })
+  return day === today ? formatClock(iso) : `${day.slice(5)} ${formatClock(iso)}`
+}
