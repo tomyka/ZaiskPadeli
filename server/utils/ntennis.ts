@@ -1,16 +1,16 @@
-import { load } from 'cheerio'
-import type { Court, TimeSlot } from './types'
-import { expandHourHeader, isSinglesCourtName, parseBgColor, parseEuro } from './parse'
-import { isSlotOver } from './time'
+import { load, type CheerioAPI } from 'cheerio'
+import type { Court } from './types'
+import { courtTypeFromName, expandHourHeader, parseBgColor, parseEuro } from './parse'
+import { perHalfHour, toSlots } from './day-grid'
 
 /**
  * Pure parser for nTennis/nSoft "reservation/short" grid HTML
- * (Tennis Space, Vilnius Padel Arena, Kauno Padelio Klubas, A1Padel).
+ * (every nTennis venue: see the ntennis entries in scraper-all.ts).
  *
- * Grid shape: one <th> per hour in <thead>; each court row has a sticky name cell
- * followed by two <td> per hour (kaire = :00, desine = :30). Cell classes encode
- * state (booking-slot-available / booking-slot-na / full / past) and the inline
- * background colour maps to a price tier in the `.legend-item` list (per hour).
+ * Grid shape: one <th> per hour in <thead>; each court row has a name cell followed by
+ * two <td> per hour (kaire = :00, desine = :30). Cell classes encode state
+ * (booking-slot-available / booking-slot-na / full / past) and a free cell's inline
+ * background colour is its price tier, listed with a per-hour price in the legend.
  */
 
 export interface NTennisGridOptions {
@@ -22,44 +22,66 @@ export interface NTennisGridOptions {
   nameFromSpan?: boolean
 }
 
+/**
+ * The legend's price tiers: colour → € per hour. Two markups exist:
+ *   current: <div class="legend-item"><span style="background-color: #8dd8f8"></span> 28 €</div>
+ *   older (DELFI sporto centras):
+ *     <div class="trow"><div><div class="legend" style="background-color: #b9e5fb"></div></div><div> 32.00€ </div></div>
+ */
+export function legendPrices($: CheerioAPI): Map<string, number> {
+  const tiers = new Map<string, number>()
+  const add = (style: string | undefined, text: string) => {
+    const color = parseBgColor(style)
+    const price = parseEuro(text)
+    if (color && price !== null) tiers.set(color, price)
+  }
+  $('.legend-item').each((_, el) => add($(el).find('span[style]').attr('style'), $(el).text()))
+  $('.trow').each((_, el) => add($(el).find('.legend[style]').attr('style'), $(el).text()))
+  return tiers
+}
+
+/** Relative lightness of a #rgb / #rrggbb colour (0 = black, 1 = white) */
+function lightness(hex: string): number {
+  const h = hex.slice(1)
+  const full = h.length === 3 ? [...h].map(c => c + c).join('') : h.slice(0, 6)
+  const [r, g, b] = [0, 2, 4].map(i => Number.parseInt(full.slice(i, i + 2), 16) / 255)
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
+}
+
+/**
+ * Colour → € per hour for the colours free cells actually use. Some installs (Vilnius Padel
+ * Arena) paint free cells in their own shades instead of the legend's; when no free cell uses a
+ * legend colour and there are exactly as many shades as tiers, they pair up by lightness: the
+ * lighter shade is the cheaper tier, as in the legend itself (checked 2026-11-26 against the
+ * booking panel: #70d113 = €28, #379917 = €40). Otherwise an unknown colour has no price.
+ */
+export function cellPrices(legend: Map<string, number>, cellColors: Iterable<string>): Map<string, number> {
+  const shades = [...new Set(cellColors)]
+  if (shades.some(c => legend.has(c)) || shades.length === 0 || shades.length !== legend.size) return legend
+  shades.sort((a, b) => lightness(b) - lightness(a))
+  const prices = [...legend.values()].sort((a, b) => a - b)
+  return new Map(shades.map((c, i) => [c, prices[i]!]))
+}
+
 export function parseNTennisGrid(html: string, opts: NTennisGridOptions): Court[] {
   const $ = load(html)
-
-  // Colour → price per 30-min slot (legend shows per-hour prices)
-  const colorPrice = new Map<string, number>()
-  $('.legend-item').each((_, el) => {
-    const color = parseBgColor($(el).find('span[style]').attr('style'))
-    const price = parseEuro($(el).text())
-    if (color && price !== null) colorPrice.set(color, price / 2)
-  })
-
-  // Fallback: some installs render the legend swatch without span[style]
-  if (colorPrice.size === 0) {
-    const legend = html.match(/class="legend"[\s\S]*?<\/div>\s*<\/div>/)?.[0] ?? ''
-    const colors = [...legend.matchAll(/background-color:\s*(#[0-9a-fA-F]{3,8})/gi)]
-    const prices = [...legend.matchAll(/(\d+(?:[.,]\d+)?)\s*€/g)]
-    colors.forEach((c, i) => {
-      const p = prices[i]?.[1]
-      if (c[1] && p) colorPrice.set(c[1].toLowerCase(), Number.parseFloat(p.replace(',', '.')) / 2)
-    })
-  }
 
   const slotTimes: string[] = []
   $('thead th').each((_, el) => { slotTimes.push(...expandHourHeader($(el).text())) })
 
-  const courts: Court[] = []
+  type Cell = { time: string; free: boolean; color: string | null }
+  const rows: { name: string; cells: Cell[] }[] = []
   $('tr').each((_, row) => {
     const sticky = $(row).find('td.rbt-sticky-col, th.rbt-sticky-col')
     // Older installs (e.g. DELFI sporto centras) put the court name in a plain first cell
     const nameEl = sticky.length
       ? sticky
       : $(row).children('td').first().filter((_, el) => !($(el).attr('class') ?? '').includes('booking-slot'))
-    const courtName = (opts.nameFromSpan && nameEl.find('span').first().text().trim()) || nameEl.text().trim()
-    if (!courtName) return
+    const name = (opts.nameFromSpan && nameEl.find('span').first().text().trim()) || nameEl.text().trim()
+    if (!name) return
 
-    const slots: TimeSlot[] = []
+    const cells: Cell[] = []
     let slotIdx = 0
-
     $(row).find('td').each((_, cell) => {
       const classes = $(cell).attr('class') || ''
       if (classes.includes('rbt-sticky-col')) return
@@ -71,21 +93,18 @@ export function parseNTennisGrid(html: string, opts: NTennisGridOptions): Court[
 
       const time = slotTimes[slotIdx++]
       if (!time) return
-
-      const available = isAvailable && !isSlotOver(time, opts.currentMinutes)
-      const color = parseBgColor($(cell).attr('style'))
-      const price = available && color ? (colorPrice.get(color) ?? null) : null
-      slots.push({ time, available, price })
+      cells.push({ time, free: isAvailable, color: parseBgColor($(cell).attr('style')) })
     })
-
-    if (slots.length === 0) return
-    courts.push({
-      id: `${opts.idPrefix}-${courtName.replace(/\s+/g, '-').toLowerCase()}`,
-      name: courtName,
-      type: isSinglesCourtName(courtName) ? 'singles' : 'doubles',
-      slots,
-    })
+    if (cells.length > 0) rows.push({ name, cells })
   })
 
-  return courts
+  const freeColors = rows.flatMap(r => r.cells.filter(c => c.free && c.color).map(c => c.color!))
+  const perHour = cellPrices(legendPrices($), freeColors)
+
+  return rows.map(({ name, cells }) => ({
+    id: `${opts.idPrefix}-${name.replace(/\s+/g, '-').toLowerCase()}`,
+    name,
+    type: courtTypeFromName(name),
+    slots: toSlots(cells.map(c => ({ time: c.time, free: c.free, price: c.color ? perHalfHour(perHour.get(c.color)) : null })), opts.currentMinutes),
+  }))
 }

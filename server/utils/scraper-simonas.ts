@@ -1,5 +1,6 @@
-import type { Court, TimeSlot } from './types'
-import { currentMinutesFor, halfHourSlots, isSlotOver } from './time'
+import type { Court } from './types'
+import { openingSlots, toSlots } from './day-grid'
+import { currentMinutesFor } from './time'
 
 /**
  * Simonas Tennis Club — custom API
@@ -19,29 +20,35 @@ interface SimonasSlot {
   price: number
 }
 
-interface SimonasCourt {
-  id: number
-  name: string        // "1", "2"
-  type: string        // "Padel"
-  workingHours: {
-    fromTime: string
-    toTime: string
-    intervalLengthMinutes: number
+export interface SimonasAvailability {
+  court: {
+    id: number
+    name: string        // "1", "2"
+    workingHours: { fromTime: string; toTime: string }
   }
-}
-
-interface SimonasAvailability {
-  court: SimonasCourt
   slots: SimonasSlot[]
 }
 
 /**
- * Extract "HH:MM" from an ISO datetime string.
- * The Simonas API returns times in Lithuanian local time with offset (+03:00 summer / +02:00 winter),
- * so we read the time component directly from the string rather than converting to UTC.
+ * "HH:MM" from an ISO datetime string. The API gives Lithuanian local time with its
+ * offset (+03:00 summer / +02:00 winter), so the clock part is read as is, not converted.
  */
 function toHHMM(iso: string): string {
   return iso.slice(11, 16)
+}
+
+/** Pure: the API's availabilities → Court[]; any working-hours slot not listed is booked */
+export function buildSimonasCourts(availabilities: SimonasAvailability[], idPrefix: string, currentMinutes = -1): Court[] {
+  return availabilities.map(({ court, slots: freeSlots }) => {
+    const priceByTime = new Map(freeSlots.map(s => [toHHMM(s.fromTime), s.price]))
+    const times = openingSlots(toHHMM(court.workingHours.fromTime), toHHMM(court.workingHours.toTime))
+    return {
+      id: `${idPrefix}-${court.id}`,
+      name: `Kortas ${court.name}`,
+      type: 'doubles' as const,
+      slots: toSlots(times.map(time => ({ time, free: priceByTime.has(time), price: priceByTime.get(time) ?? null })), currentMinutes),
+    }
+  })
 }
 
 export async function scrapeSimonas(date: string, venue: { id: string }): Promise<Court[]> {
@@ -52,18 +59,6 @@ export async function scrapeSimonas(date: string, venue: { id: string }): Promis
     { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' }, signal: AbortSignal.timeout(15_000) },
   )
   if (!resp.ok) throw new Error(`API returned ${resp.status}`)
-
-  const data: { availabilities: SimonasAvailability[] } = await resp.json()
-  const currentMinutes = currentMinutesFor(date)
-
-  // The API lists only AVAILABLE slots; everything else within working hours is booked
-  return (data.availabilities ?? []).map(({ court, slots: availableSlots }) => {
-    const priceByTime = new Map(availableSlots.map(s => [toHHMM(s.fromTime), s.price]))
-    const slots: TimeSlot[] = halfHourSlots(toHHMM(court.workingHours.fromTime), toHHMM(court.workingHours.toTime))
-      .map(time => {
-        const available = !isSlotOver(time, currentMinutes) && priceByTime.has(time)
-        return { time, available, price: available ? (priceByTime.get(time) ?? null) : null }
-      })
-    return { id: `${venue.id}-${court.id}`, name: `Kortas ${court.name}`, type: 'doubles' as const, slots }
-  })
+  const data = (await resp.json()) as { availabilities?: SimonasAvailability[] }
+  return buildSimonasCourts(data.availabilities ?? [], venue.id, currentMinutesFor(date))
 }

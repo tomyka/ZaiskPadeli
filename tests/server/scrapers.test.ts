@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { parseNTennisGrid } from '../../server/utils/ntennis'
+import { cellPrices, parseNTennisGrid } from '../../server/utils/ntennis'
 import { isSinglesCourtName } from '../../server/utils/parse'
 import { padelHubSlotTime, parsePadelHubCourts } from '../../server/utils/scraper-padelhub'
 import { parsePadelHouseHtml } from '../../server/utils/scraper-padelhouse'
@@ -32,8 +32,23 @@ describe('parseNTennisGrid', () => {
   it('reads older grids whose court name is a plain first cell (DELFI sporto centras)', () => {
     const courts = parseNTennisGrid(fixture('ntennis-grid-legacy.html'), { idPrefix: 'delfi', currentMinutes: -1 })
     expect(courts.map(c => c.name)).toEqual(['Court by MaxiNutrition', 'Padel 2'])
-    expect(courts[1]!.slots[0]).toMatchObject({ time: '07:00', available: true })
+    expect(courts[1]!.slots[0]).toEqual({ time: '07:00', available: true, price: 16 }) // legend: 32.00€ per hour
     expect(courts[1]!.slots).toHaveLength(30) // 07:00–21:30
+  })
+
+  it('prices free cells painted in their own shades by lightness, lighter = cheaper (Vilnius Padel Arena)', () => {
+    const grid = `
+      <div class="legend-item"><span style="background-color: #8dd8f8;"></span> 28 €</div>
+      <div class="legend-item"><span style="background-color: #00baf2;"></span> 40 €</div>
+      <table><thead><tr><th></th><th colspan="2">18:00</th></tr></thead>
+      <tr><td class="rbt-sticky-col">1 ACTIVE</td>
+        <td class="booking-slot-available" style="background-color: #70d113"></td>
+        <td class="booking-slot-available" style="background-color: #379917"></td></tr></table>`
+    expect(parseNTennisGrid(grid, { idPrefix: 'v', currentMinutes: -1 })[0]!.slots.map(s => s.price)).toEqual([14, 20])
+  })
+
+  it('leaves unknown colours unpriced when some cells do use the legend', () => {
+    expect(cellPrices(new Map([['#aaaaaa', 20], ['#111111', 30]]), ['#aaaaaa', '#70d113']).get('#70d113')).toBeUndefined()
   })
 
   it('recognises singles courts by Lithuanian or English names', () => {
@@ -84,7 +99,7 @@ describe('parsePadelHubCourts', () => {
       type: 'doubles',
       slots: [
         { time: '07:00', available: true, price: 10 },
-        { time: '07:30', available: false, price: 12 },
+        { time: '07:30', available: false, price: null }, // only available slots carry a price
       ],
     }])
   })

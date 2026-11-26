@@ -1,6 +1,8 @@
 import type { Court } from './types'
-import { isSinglesCourtName } from './parse'
-import { currentMinutesFor, dayOfWeek, fromMinutes, isSlotOver, toEndMinutes, toMinutes } from './time'
+import { bookedAt, openingSlots, toSlots } from './day-grid'
+import { courtTypeFromName } from './parse'
+import { currentMinutesFor, dayOfWeek, toEndMinutes, toMinutes } from './time'
+import { BROWSER_UA } from './user-agent'
 
 /**
  * Playball platform (playball.lt), public API used by its booking page:
@@ -15,7 +17,6 @@ import { currentMinutesFor, dayOfWeek, fromMinutes, isSlotOver, toEndMinutes, to
  */
 
 const API = 'https://playball.lt/api/v1'
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 export interface PlayballClub {
   id: number
@@ -40,6 +41,9 @@ export interface PlayballDay {
 /** "08:00:00Z" → "08:00" */
 const clock = (t: string) => t.replace(/[Z+].*$/, '').slice(0, 5)
 
+/** "2026-11-27" or "2026-11-27T00:00:00Z" → "2026-11-27" */
+const isoDate = (d: string) => d.slice(0, 10)
+
 /** 1 = Monday … 7 = Sunday */
 const isoWeekday = (date: string) => dayOfWeek(date) || 7
 
@@ -48,13 +52,14 @@ export function buildPlayballCourts(day: PlayballDay, date: string, idPrefix: st
   const weekday = isoWeekday(date)
   const hours = day.club.working_hours.find(h => h.day_of_week === weekday && h.is_active)
   if (!hours) return []
-  const open = toMinutes(clock(hours.start_time))
-  const close = toEndMinutes(clock(hours.end_time))
+  const times = openingSlots(clock(hours.start_time), clock(hours.end_time))
 
-  const bookedByCourt = new Map(day.booked.map(b => [b.court_id, b.bookings.map(r => [toMinutes(clock(r.start_time)), toEndMinutes(clock(r.end_time))] as const)]))
-  const policies = day.policies.filter(p => p.is_active && (!p.start_date || p.start_date <= date) && (!p.end_date || date <= p.end_date))
+  const policies = day.policies.filter(p => p.is_active
+    && (!p.start_date || isoDate(p.start_date) <= date)
+    && (!p.end_date || date <= isoDate(p.end_date)))
 
-  const priceFor = (courtId: number, slot: number): number | null => {
+  const priceFor = (courtId: number, time: string): number | null => {
+    const slot = toMinutes(time)
     for (const p of policies) {
       if (!p.courts.some(c => c.id === courtId)) continue
       for (const s of p.price_segments) {
@@ -66,30 +71,26 @@ export function buildPlayballCourts(day: PlayballDay, date: string, idPrefix: st
   }
 
   return day.courts.filter(c => c.is_active !== false).map((c) => {
-    const booked = bookedByCourt.get(c.id) ?? []
-    const slots = []
-    for (let m = open; m < close; m += 30) {
-      const time = fromMinutes(m)
-      const taken = booked.some(([s, e]) => m < e && m + 30 > s)
-      const available = !taken && !isSlotOver(time, currentMinutes)
-      slots.push({ time, available, price: available ? priceFor(c.id, m) : null })
-    }
+    const ranges = day.booked.find(b => b.court_id === c.id)?.bookings ?? []
+    const isBooked = bookedAt(ranges.map(r => ({ start: clock(r.start_time), end: clock(r.end_time) })))
     return {
       id: `${idPrefix}-${c.id}`,
       name: c.name,
-      type: isSinglesCourtName(c.name) ? 'singles' as const : 'doubles' as const,
+      type: courtTypeFromName(c.name),
+      // Per court: a club can mix indoor and outdoor courts
       ...(c.court_type === 'indoor' ? { indoor: true } : c.court_type === 'outdoor' ? { indoor: false } : {}),
-      slots,
+      slots: toSlots(times.map(time => ({ time, free: !isBooked(time), price: priceFor(c.id, time) })), currentMinutes),
     }
   })
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`, { headers: { 'User-Agent': UA, 'Accept': 'application/json' }, signal: AbortSignal.timeout(10_000) })
+  const res = await fetch(`${API}${path}`, { headers: { 'User-Agent': BROWSER_UA, 'Accept': 'application/json' }, signal: AbortSignal.timeout(10_000) })
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
   return res.json() as Promise<T>
 }
 
+/** List endpoints answer a bare array or a page envelope ({ items } / { data }) */
 const items = <T>(body: unknown): T[] =>
   Array.isArray(body) ? body as T[] : ((body as { items?: T[]; data?: T[] })?.items ?? (body as { data?: T[] })?.data ?? [])
 

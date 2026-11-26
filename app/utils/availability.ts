@@ -43,6 +43,8 @@ export interface VenueView {
 export interface AvailabilityView {
   /** Venues with at least one session, plus venues that failed to load (shown with their error) */
   venues: VenueView[]
+  /** Venues in the location with matching courts but no session for these filters: covered, just full */
+  full: Venue[]
   bookableCount: number
   /** Choices for the "nuo" picker: every not-yet-started slot time on matching courts in the location,
    *  plus the chosen time even when this day doesn't offer it (so the picker never goes blank) */
@@ -76,6 +78,7 @@ export function buildAvailabilityView(venues: Venue[], f: ViewFilters, currentMi
 
   return {
     venues: views,
+    full: all.filter(v => v.courts.length > 0 && v.sessions.starts.length === 0 && !venueProblem(v.venue)).map(v => v.venue),
     bookableCount: views.filter(v => v.sessions.starts.length > 0).length,
     startTimeOptions: [...times].sort(byDayTime),
     showMunicipality: new Set(views.map(v => v.venue.municipality)).size > 1,

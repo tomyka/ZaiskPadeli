@@ -150,14 +150,22 @@ export async function loginAndFetchGrid(site: NTennisSite, date: string): Promis
   }
 }
 
-/** Server-side convenience: log in, fetch the grid, and throw unless it is usable. */
-export async function fetchNTennisGrid(site: NTennisSite, date: string): Promise<string> {
-  const result = await loginAndFetchGrid(site, date)
-  if (result.loginRejected) throw new Error(LOGIN_REJECTED)
+/**
+ * Throws with a diagnostic reason unless a grid fetch (here or through the cf-proxy Worker)
+ * produced a usable grid; returns its HTML. Older Worker builds report a rejected login
+ * as `error: LOGIN_REJECTED` instead of `loginRejected`.
+ */
+export function usableGridHtml(result: Pick<NTennisGridResult, 'html' | 'status'> & { loginRejected?: boolean; error?: string }): string {
+  if (result.loginRejected || result.error === LOGIN_REJECTED) throw new Error(LOGIN_REJECTED)
   if (result.status >= 300 && result.status < 400) {
     throw new Error(`Grid redirected (HTTP ${result.status}) — session not established`)
   }
   if (result.status >= 400) throw new Error(`Grid HTTP ${result.status}`)
   assertGridHtml(result.html)
   return result.html
+}
+
+/** Server-side convenience: log in, fetch the grid, and throw unless it is usable. */
+export async function fetchNTennisGrid(site: NTennisSite, date: string): Promise<string> {
+  return usableGridHtml(await loginAndFetchGrid(site, date))
 }

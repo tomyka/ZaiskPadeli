@@ -1,27 +1,25 @@
 /**
- * Cloudflare Worker proxy for Cloudflare-protected nTennis booking sites.
+ * Cloudflare Worker proxy for booking sites behind Cloudflare.
  *
  * Workers run on Cloudflare's edge network and are not subject to the same
  * bot-challenge rules that block datacenter IPs (like Vercel's).
  *
- * Flow: Vercel app → this Worker → kaunopadelis.lt → grid HTML → Vercel app
- * The Vercel scraper (server/utils/scraper-kaunopadelis.ts) parses the HTML.
+ * Flow: Vercel app → this Worker → the booking site → raw day data → Vercel app
+ * The sites and how each is fetched live in server/utils/protected-sites.ts (runtime-agnostic),
+ * which wrangler bundles in here; the server calls this Worker from protected-fetch.ts,
+ * which runs the same site entry's check on the answer. This file handles auth, secrets and logging.
  *
- * The guest-login flow itself is shared with the server: wrangler bundles
- * server/utils/ntennis-fetch.ts (runtime-agnostic, web APIs only) into this Worker.
- * This file only handles auth, the site table, credentials and the response.
- *
- * Response contract (consumed by scraper-kaunopadelis.ts):
- *   200 { html, status, loginStatus, error? }   — html is '' when login/grid failed
+ * Response contract (consumed by server/utils/protected-fetch.ts):
+ *   200 <the site entry's day data>   — kaunopadelis: { html, status, loginStatus, loginRejected }
+ *                                       gopadel: { facility, availability }
  *   4xx/5xx { error }
  *
  * The Worker also owns the cache pre-warm schedule: its cron trigger (wrangler.toml)
  * calls the app's /api/cron/scrape — see `scheduled` below.
  */
 
-import { LOGIN_REJECTED, loginAndFetchGrid, type NTennisSite } from '../../server/utils/ntennis-fetch'
+import { isProtectedSiteId, PROTECTED_SITES } from '../../server/utils/protected-sites'
 import type { ScrapeReport } from '../../server/utils/types'
-import { fetchGoPadelDay } from '../../server/utils/gopadel-fetch'
 
 interface Env {
   PROXY_TOKEN: string
@@ -61,15 +59,6 @@ async function triggerScrape(env: Env): Promise<void> {
   if (outages.length) throw new Error(`Every venue failed for ${outages.join(', ')}`)
 }
 
-/** Sites this proxy may fetch, with credentials resolved from Worker secrets */
-const SITES: Record<string, (env: Env) => NTennisSite> = {
-  kaunopadelis: env => ({
-    baseUrl: 'https://savitarna.kaunopadelis.lt',
-    placeId: 1,
-    fallbackGuest: { login: env.KAUNOPADELIS_LOGIN, password: env.KAUNOPADELIS_PASSWORD },
-  }),
-}
-
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // CORS preflight
@@ -101,32 +90,26 @@ export default {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return json({ error: 'Invalid date, expected YYYY-MM-DD' }, 400)
     }
-    // GO Padel (Alytus): JSON API behind Cloudflare; returns { facility, availability }
-    if (site === 'gopadel') {
-      try {
-        return json(await fetchGoPadelDay(date))
-      } catch (err: any) {
-        console.warn(`[gopadel] fetch failed: ${err?.message}`)
-        return json({ error: err?.message ?? 'Unknown error' }, 502)
-      }
-    }
-
-    const siteFor = SITES[site]
-    if (!siteFor) {
+    if (!isProtectedSiteId(site)) {
       return json({ error: `Unknown site: ${site}` }, 400)
     }
 
+    const entry = PROTECTED_SITES[site] as { fetch: (date: string, secrets: (name: string) => string | undefined) => Promise<unknown>; check: (day: unknown) => void }
     try {
-      const { html, status, loginStatus, loginRejected } = await loginAndFetchGrid(siteFor(env), date)
-      if (!html.includes('booking-slot')) {
-        // Visible in `wrangler tail` — the Vercel side only sees a generic venue error
+      const day = await entry.fetch(date, name => (env as unknown as Record<string, string | undefined>)[name])
+      try {
+        entry.check(day)
+      } catch (err: any) {
+        // Visible in `wrangler tail`; the app runs the same check and records the venue as failed
         const colo = (request as { cf?: { colo?: string } }).cf?.colo
+        const html = (day as { html?: string }).html ?? ''
         const title = html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim()
-        console.warn(`[${site}] unusable grid: status=${status} login=${loginStatus} rejected=${loginRejected} len=${html.length} colo=${colo} title=${title}`)
+        console.warn(`[${site}] unusable day: ${err?.message} colo=${colo}${title ? ` title=${title}` : ''}`)
       }
-      return json({ html, status, loginStatus, ...(loginRejected ? { error: LOGIN_REJECTED } : {}) })
+      return json(day)
     } catch (err: any) {
-      return json({ error: err?.message ?? 'Unknown error' }, 500)
+      console.warn(`[${site}] fetch failed: ${err?.message}`)
+      return json({ error: err?.message ?? 'Unknown error' }, 502)
     }
   },
 

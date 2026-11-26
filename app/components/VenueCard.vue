@@ -74,7 +74,15 @@
             </button>
           </div>
         </div>
-        <div class="px-4 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 px-4 py-3">
+          <a :href="mapsUrl" target="_blank" rel="noopener"
+            class="inline-flex min-h-[44px] items-center gap-1.5 text-sm text-gray-600 hover:text-ink">
+            <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+            </svg>
+            {{ venue.address }}
+          </a>
           <a :href="venue.bookingUrl" target="_blank" rel="noopener"
             class="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-ball-text hover:text-ball-deep">
             Atidaryti klubo rezervacijas
@@ -123,6 +131,9 @@ const STRIP_CLASS: Record<StripCell['state'], string> = {
 const accent = computed(() => venueInfo(props.venue.id)?.color ?? '#9ca3af')
 
 const problem = computed(() => venueProblem(props.venue))
+
+const mapsUrl = computed(() =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${props.venue.name}, ${props.venue.address}`)}`)
 
 const meta = computed(() => {
   if (problem.value) return props.venue.address

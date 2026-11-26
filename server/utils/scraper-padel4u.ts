@@ -1,5 +1,6 @@
 import type { Court, TimeSlot } from './types'
-import { currentMinutesFor, isSlotOver, toMinutes } from './time'
+import { toSlots } from './day-grid'
+import { currentMinutesFor } from './time'
 
 /**
  * Padel4U (Kaunas) — custom WordPress "padel-reservations" plugin at padel4u.cloud
@@ -12,7 +13,7 @@ import { currentMinutesFor, isSlotOver, toMinutes } from './time'
  *    One entry per 30-min slot with its own price; reason = '' | 'booked' | 'tournament'.
  *
  * The club is open until 02:30, and the API lists those after-midnight slots under the
- * same date. Our day grid is 00:00–24:00 per date, so they are dropped (see dropAfterMidnight).
+ * same date: they belong to the end of that venue day (see the venue-day clock in time.ts).
  */
 
 const BASE_URL = 'https://padel4u.cloud'
@@ -42,23 +43,9 @@ export function parsePadel4uConfig(html: string): Padel4uConfig {
   return { nonce: cfg.nonce, courts: cfg.courts.map(c => ({ id: c.id, name: c.name })) }
 }
 
-/**
- * Slots are returned in chronological order from opening time; anything that starts
- * earlier than the first slot has wrapped past midnight into the next calendar day.
- */
-export function dropAfterMidnight(slots: Padel4uSlot[]): Padel4uSlot[] {
-  const first = slots[0]
-  if (!first) return []
-  const opening = toMinutes(first.start_time)
-  return slots.filter(s => toMinutes(s.start_time) >= opening)
-}
-
-/** API slots → our TimeSlots (price is already per 30-min slot). */
+/** API slots → our TimeSlots (price is already per 30-min slot). After-midnight slots stay, at the end of the day. */
 export function toTimeSlots(slots: Padel4uSlot[], currentMinutes: number): TimeSlot[] {
-  return dropAfterMidnight(slots).map(s => {
-    const available = s.available && !isSlotOver(s.start_time, currentMinutes)
-    return { time: s.start_time, available, price: available ? (s.price ?? null) : null }
-  })
+  return toSlots(slots.map(s => ({ time: s.start_time, free: s.available, price: s.price ?? null })), currentMinutes)
 }
 
 /** Normalise "1 kortas" / "2 Kortas" / "4 Metalurga" → "Kortas 1" / "Kortas 2" / "Kortas 4 Metalurga" */

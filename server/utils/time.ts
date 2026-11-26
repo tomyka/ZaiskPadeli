@@ -139,13 +139,5 @@ export function fromMinutes(min: number): string {
   return `${h}:${m}`
 }
 
-/** 30-min slot start times in [open, close). A close of "00:00" means midnight. */
-export function halfHourSlots(open: string, close: string): string[] {
-  const slots: string[] = []
-  const end = toEndMinutes(close)
-  for (let cur = toMinutes(open); cur < end; cur += SLOT_MIN) slots.push(fromMinutes(cur))
-  return slots
-}
-
 /** How far ahead availability can be requested; the API and the date picker share it */
 export const MAX_DAYS_AHEAD = 180

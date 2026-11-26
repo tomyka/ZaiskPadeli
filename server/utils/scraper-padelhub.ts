@@ -1,5 +1,6 @@
-import type { Court, TimeSlot } from './types'
-import { fromMinutes } from './time'
+import type { Court } from './types'
+import { toSlots } from './day-grid'
+import { currentMinutesFor, fromMinutes } from './time'
 
 /**
  * Padel Hub — Mokesta API (ABP Framework)
@@ -10,7 +11,7 @@ export async function scrapePadelHub(date: string, venue: { id: string }): Promi
   const url = `https://padelhubsavapi.mokesta.lt/api/services/app/Padelhub/GetCourtReservations?date=${date}`
   const data = await $fetch<{ result?: PadelHubCourt[] }>(url, { timeout: 15000 })
   if (!data?.result) throw new Error('No data returned from API')
-  return parsePadelHubCourts(data.result, venue.id)
+  return parsePadelHubCourts(data.result, venue.id, currentMinutesFor(date))
 }
 
 /** One court as returned by GetCourtReservations (fields we use only). */
@@ -36,7 +37,7 @@ export function padelHubSlotTime(timeIdentifier: number): string {
   return fromMinutes((timeIdentifier - 1) * 30)
 }
 
-export function parsePadelHubCourts(result: PadelHubCourt[], idPrefix: string): Court[] {
+export function parsePadelHubCourts(result: PadelHubCourt[], idPrefix: string, currentMinutes = -1): Court[] {
   const courts: Court[] = []
   for (const court of result) {
     // Only include padel courts (skip squash)
@@ -46,11 +47,11 @@ export function parsePadelHubCourts(result: PadelHubCourt[], idPrefix: string): 
     const isDoubles = name.toLowerCase().includes('dvejet')
     const isSingles = name.toLowerCase().includes('vienet')
 
-    const slots: TimeSlot[] = court.times.map(t => ({
+    const slots = toSlots(court.times.map(t => ({
       time: padelHubSlotTime(t.timeIdentifier),
-      available: !t.isReserved,
+      free: !t.isReserved,
       price: t.price ?? null,
-    }))
+    })), currentMinutes)
 
     courts.push({
       id: `${idPrefix}-${court.id}`,

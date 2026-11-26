@@ -1,3 +1,4 @@
+import type { CourtKind } from './types'
 import { fromMinutes, toMinutes } from './time'
 
 /**
@@ -32,4 +33,9 @@ export function expandHourHeader(text: string): string[] {
 /** "Vienetų kortas", "5 Single SUN365", "1v1": clubs name singles courts in several ways */
 export function isSinglesCourtName(name: string): boolean {
   return /vienet|single|\b1\s*v\s*1\b/i.test(name)
+}
+
+/** A court's type from its name: singles when the club names it so, else doubles */
+export function courtTypeFromName(name: string): CourtKind {
+  return isSinglesCourtName(name) ? 'singles' : 'doubles'
 }

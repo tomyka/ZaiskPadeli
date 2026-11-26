@@ -188,6 +188,26 @@
           </div>
         </div>
 
+        <!-- Covered venues with nothing free for these filters: listed so they don't silently vanish -->
+        <section v-if="view.full.length" aria-labelledby="full-venues-title"
+          class="mt-3 rounded-2xl border border-court-line bg-white px-4 py-3">
+          <h2 id="full-venues-title" class="text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Be laisvų {{ duration }} min laikų{{ fromTime ? ` nuo ${fromTime}` : '' }}
+          </h2>
+          <ul class="mt-1 divide-y divide-gray-100">
+            <li v-for="v in view.full" :key="v.id">
+              <a :href="v.bookingUrl" target="_blank" rel="noopener"
+                class="flex min-h-[44px] items-center gap-3 text-sm text-gray-600 hover:text-ink">
+                <span class="h-2 w-2 shrink-0 rounded-full opacity-60" :style="{ backgroundColor: venueInfo(v.id)?.color ?? '#9ca3af' }" aria-hidden="true"></span>
+                <span class="min-w-0 flex-1 truncate"><span class="font-medium text-ink">{{ v.name }}</span> · {{ v.municipality }}</span>
+                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </section>
+
         <!-- Ad unit — shown after users have seen the value -->
         <div class="mt-6 flex justify-center">
           <ins class="adsbygoogle"
@@ -250,6 +270,7 @@ import { MAX_DAYS_AHEAD, addDays, currentMinutesFor, dayOfWeek, isValidIsoDate, 
 import { buildAvailabilityView, resolveSession, type SelectedSession } from '~/utils/availability'
 import { DURATIONS } from '~/utils/prefs'
 import { formatClock, ltPlural } from '~/utils/format'
+import { venueInfo } from '~~/server/utils/venues'
 
 // Remembered across visits (cookie): county, municipality, duration, court type, indoor
 const { location, duration, type: filterType, indoor: filterIndoor, clearCourtFilters } = usePrefs()

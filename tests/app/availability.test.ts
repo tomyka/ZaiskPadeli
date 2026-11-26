@@ -35,10 +35,16 @@ describe('buildAvailabilityView', () => {
   const full = venue('f', 'Kaunas', [court('f1', '0000')])
   const broken = venue('b', 'Kaunas', [], { status: 'failed' })
 
-  it('filters by county, keeps errored venues, drops venues with no session', () => {
+  it('filters by county, keeps errored venues, lists venues with no session separately as full', () => {
     const view = buildAvailabilityView([kaunas, vilnius, full, broken], { ...ANY, location: KAUNO }, NOT_TODAY)
     expect(view.venues.map(v => v.venue.id)).toEqual(['k', 'b'])
+    expect(view.full.map(v => v.id)).toEqual(['f'])
     expect(view.bookableCount).toBe(1)
+  })
+
+  it('does not call a venue full when none of its courts match the filters', () => {
+    const doublesOnly = venue('d', 'Kaunas', [court('d1', '0000')])
+    expect(buildAvailabilityView([doublesOnly], { ...ANY, type: 'singles' }, NOT_TODAY).full).toEqual([])
   })
 
   it('applies court filters before finding sessions', () => {

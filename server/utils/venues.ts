@@ -11,7 +11,7 @@ import { countyOf, type County, type Municipality } from './regions'
  *
  * Adding a venue:
  *   1. add an entry below
- *   2. add its scraper to SCRAPERS in scraper-all.ts (typecheck fails until you do)
+ *   2. add its ScraperSpec to SCRAPERS in scraper-all.ts (typecheck fails until you do)
  */
 
 export interface VenueInfo {
@@ -109,7 +109,7 @@ export const VENUES = [
     name: 'K-Padel',
     address: 'Ramygalos g. 149E, Panevėžys',
     municipality: 'Panevėžys',
-    bookingUrl: 'https://app.moove.lt/padel/reservation',
+    bookingUrl: 'https://app.moove.lt/padel/club/reservation/108?locationId=227',
     // indoor decided per court ("laukas" = outdoor)
     color: '#6366f1',
   },
@@ -200,7 +200,8 @@ export const VENUES = [
     name: 'Skycop padelio arena',
     address: 'Bangų g. 2, Klaipėda',
     municipality: 'Klaipėda',
-    bookingUrl: 'https://savitarna.padelionamai.lt/',
+    // Guest login always lands on Slėnis viduje; this link selects Skycop once logged in
+    bookingUrl: 'https://savitarna.padelionamai.lt/reservation/short?iPlaceId=4',
     // 5 courts, 4 of them covered; the grid doesn't say which: left unknown
     color: '#84cc16',
   },
@@ -209,7 +210,7 @@ export const VENUES = [
     name: 'Padelio namai',
     address: 'Jungtinė g. 1, Aukštkiemiai, Klaipėdos r.',
     municipality: 'Klaipėdos r.',
-    bookingUrl: 'https://savitarna.padelionamai.lt/',
+    bookingUrl: 'https://savitarna.padelionamai.lt/reservation/short?iPlaceId=2',
     indoor: true, // "Slėnis viduje"
     color: '#0284c7',
   },
@@ -227,7 +228,7 @@ export const VENUES = [
     name: 'Start Padel Palanga',
     address: 'Vėjų g. 6, Palanga',
     municipality: 'Palanga',
-    bookingUrl: 'https://app.moove.lt/padel/reservation',
+    bookingUrl: 'https://app.moove.lt/padel/club/reservation/73?locationId=158',
     indoor: true,
     color: '#7c3aed',
   },
@@ -264,7 +265,7 @@ export const VENUES = [
     name: 'Mostai padelio klubas',
     address: 'Savanorių pr. 178B, Vilnius',
     municipality: 'Vilnius',
-    bookingUrl: 'https://app.moove.lt/padel/club/reservation/1?locationId=224',
+    bookingUrl: 'https://app.moove.lt/padel/club/reservation/105?locationId=224',
     indoor: true,
     color: '#0891b2',
   },
@@ -327,7 +328,7 @@ export const VENUES = [
     name: 'Sky Padel, Vilnius Outlet',
     address: 'Vytauto Pociūno g. 8, Vilnius',
     municipality: 'Vilnius',
-    bookingUrl: 'https://app.moove.lt/padel/club/reservation/105?locationId=145',
+    bookingUrl: 'https://app.moove.lt/padel/club/reservation/140?locationId=145',
     indoor: false,
     color: '#0d9488',
   },
@@ -336,7 +337,7 @@ export const VENUES = [
     name: 'UPadel',
     address: 'V. Bergo g. 8, Rečionys, Ukmergės r.',
     municipality: 'Ukmergės r.',
-    bookingUrl: 'https://moove.lt/padel/club/reservation/138',
+    bookingUrl: 'https://app.moove.lt/padel/club/reservation/138?locationId=297',
     indoor: true,
     color: '#b45309',
   },

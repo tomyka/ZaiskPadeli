@@ -1,7 +1,8 @@
 import { load } from 'cheerio'
 import type { Court, TimeSlot } from './types'
 import { expandHourHeader, parseBgColor, parseEuro } from './parse'
-import { currentMinutesFor, isSlotOver } from './time'
+import { perHalfHour, toSlots, type SlotCell } from './day-grid'
+import { currentMinutesFor } from './time'
 
 /**
  * Padel House — Public HTML timetable
@@ -33,7 +34,7 @@ export function parsePadelHouseHtml(html: string, currentMinutes: number, idPref
     const courtName = $(row).find('th.sticky-colum, td.sticky-colum').text().trim()
     if (!courtName || courtsByName.has(courtName)) return
 
-    const slots: TimeSlot[] = []
+    const cells: SlotCell[] = []
     let slotIdx = 0
     $(row).find('td').each((_, cell) => {
       const el = $(cell)
@@ -42,13 +43,13 @@ export function parsePadelHouseHtml(html: string, currentMinutes: number, idPref
 
       const time = slotTimes[slotIdx++]
       if (!time) return
-      const available = !classes.includes('not-available') && !isSlotOver(time, currentMinutes)
+      const free = !classes.includes('not-available')
       const color = parseBgColor(el.attr('style'))
       const hourly = color ? colorPrice.get(color) : undefined
-      slots.push({ time, available, price: available && hourly !== undefined ? hourly / 2 : null })
+      cells.push({ time, free, price: perHalfHour(hourly) })
     })
 
-    if (slots.length > 0) courtsByName.set(courtName, slots)
+    if (cells.length > 0) courtsByName.set(courtName, toSlots(cells, currentMinutes))
   })
 
   return [...courtsByName].map(([name, slots], i) => ({

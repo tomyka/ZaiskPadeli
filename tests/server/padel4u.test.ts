@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  courtDisplayName, dropAfterMidnight, parsePadel4uConfig, scrapePadel4u, toTimeSlots, type Padel4uSlot,
+  courtDisplayName, parsePadel4uConfig, scrapePadel4u, toTimeSlots, type Padel4uSlot,
 } from '../../server/utils/scraper-padel4u'
 
 const PAGE = readFileSync(fileURLToPath(new URL('../fixtures/padel4u-page.html', import.meta.url)), 'utf8')
@@ -36,22 +36,19 @@ describe('parsePadel4uConfig', () => {
 })
 
 describe('slot mapping', () => {
-  it('drops slots that wrapped past midnight into the next day', () => {
-    expect(dropAfterMidnight(DAY).map(s => s.start_time)).toEqual(['05:00', '05:30', '20:00', '23:30'])
-    expect(dropAfterMidnight([])).toEqual([])
-  })
-
-  it('keeps per-slot prices only for available slots', () => {
+  it('keeps after-midnight slots, at the end of the venue day, and prices only available slots', () => {
     expect(toTimeSlots(DAY, -1)).toEqual([
       { time: '05:00', available: true, price: 13 },
       { time: '05:30', available: false, price: null },
       { time: '20:00', available: false, price: null },
       { time: '23:30', available: true, price: 10 },
+      { time: '00:00', available: true, price: 10 },
+      { time: '02:00', available: true, price: 10 },
     ])
   })
 
-  it('marks finished slots unavailable today', () => {
-    expect(toTimeSlots(DAY, 6 * 60).map(s => s.available)).toEqual([false, false, false, true])
+  it('marks finished slots unavailable today, but not tonight\'s after-midnight ones', () => {
+    expect(toTimeSlots(DAY, 6 * 60).map(s => s.available)).toEqual([false, false, false, true, true, true])
   })
 
   it('normalises court names', () => {
@@ -89,7 +86,7 @@ describe('scrapePadel4u', () => {
     expect(courts.map(c => [c.id, c.name])).toEqual([
       ['padel4u-17', 'Kortas 1'], ['padel4u-59', 'Kortas 2'], ['padel4u-60', 'Kortas 3'], ['padel4u-61', 'Kortas 4 Metalurga'],
     ])
-    expect(courts[0]!.slots).toHaveLength(4)
+    expect(courts[0]!.slots).toHaveLength(6)
   })
 
   it('returns no courts (not an error) beyond the booking window', async () => {

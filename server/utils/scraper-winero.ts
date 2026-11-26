@@ -1,5 +1,7 @@
-import type { Court, TimeSlot } from './types'
-import { currentMinutesFor, dayOfWeek, halfHourSlots, isSlotOver, toEndMinutes, toMinutes } from './time'
+import type { Court } from './types'
+import { bookedAt, openingSlots, perHalfHour, toSlots } from './day-grid'
+import { courtTypeFromName } from './parse'
+import { currentMinutesFor, dayOfWeek, toEndMinutes, toMinutes } from './time'
 
 /**
  * Generic Winero.lt scraper
@@ -34,28 +36,28 @@ export function parseOpeningHours(raw: string, date: string): { open: string; cl
   return null
 }
 
-function priceIn(slots: WineroTimeSlot[] | undefined, slotMin: number): number | null {
+function priceIn(slots: WineroTimeSlot[] | undefined, slotTime: string): number | null {
+  const slotMin = toMinutes(slotTime)
   for (const ts of slots ?? []) {
-    if (slotMin >= toMinutes(ts.start_time) && slotMin < toEndMinutes(ts.end_time)) return ts.price / 2 // per hour → per 30 min
+    if (slotMin >= toMinutes(ts.start_time) && slotMin < toEndMinutes(ts.end_time)) return perHalfHour(ts.price)
   }
   return null
 }
 
 /** Per-30-min price for a slot. Exception periods (date-ranged) take precedence over regular ones. */
 export function getPriceForSlot(court: WineroCourt, date: string, slotTime: string): number | null {
-  const slotMin = toMinutes(slotTime)
   const day = DAY_NAMES[dayOfWeek(date)]!.toLowerCase()
 
   for (const exc of court.exception_price_periods ?? []) {
     // ISO dates compare correctly as strings
     if (exc.days.includes(day) && date >= exc.start_date && date <= exc.end_date) {
-      const price = priceIn(exc.time_slots, slotMin)
+      const price = priceIn(exc.time_slots, slotTime)
       if (price !== null) return price
     }
   }
   for (const period of court.price_periods ?? []) {
     if (!period.days.includes(day)) continue
-    const price = priceIn(period.time_slots, slotMin)
+    const price = priceIn(period.time_slots, slotTime)
     if (price !== null) return price
   }
   return null
@@ -66,6 +68,32 @@ export interface WineroArenaConfig {
   arenaId: string
   /** Court name substrings to skip (case-insensitive), e.g. ball machines */
   skipCourts?: string[]
+}
+
+/** One day's arena + public-availability responses (the fields we use) */
+export interface WineroDay {
+  arena: { id?: string; opening_hours?: string; courts?: WineroCourt[] }
+  booked: { court_id: string; start_time: string; end_time: string }[]
+}
+
+/** Pure: one day's API data → Court[] over the arena's opening hours */
+export function buildWineroCourts(day: WineroDay, config: WineroArenaConfig, date: string, idPrefix: string, currentMinutes = -1): Court[] {
+  const hours = parseOpeningHours(day.arena.opening_hours ?? '', date)
+  if (!hours) throw new Error('Could not parse opening hours')
+  const times = openingSlots(hours.open, hours.close)
+  const skip = (config.skipCourts ?? []).map(s => s.toLowerCase())
+
+  return (day.arena.courts ?? [])
+    .filter(court => !skip.some(s => court.name.toLowerCase().includes(s)))
+    .map((court) => {
+      const isBooked = bookedAt(day.booked.filter(b => b.court_id === court.id).map(b => ({ start: b.start_time, end: b.end_time })))
+      return {
+        id: `${idPrefix}-${court.id}`,
+        name: court.name,
+        type: courtTypeFromName(court.name),
+        slots: toSlots(times.map(time => ({ time, free: !isBooked(time), price: getPriceForSlot(court, date, time) })), currentMinutes),
+      }
+    })
 }
 
 async function getJson(url: string): Promise<any> {
@@ -83,43 +111,11 @@ async function getJson(url: string): Promise<any> {
  */
 export function wineroScraper(config: WineroArenaConfig) {
   return async (date: string, venue: { id: string }): Promise<Court[]> => {
-    const [arenaData, availData] = await Promise.all([
+    const [arena, availability] = await Promise.all([
       getJson(`${WINERO_BASE}/api/arenas/${config.arenaId}`),
       getJson(`${WINERO_BASE}/api/bookings/public-availability?arena_id=${config.arenaId}&date=${date}`),
     ])
-    if (!arenaData?.id) throw new Error('Arena not found')
-
-    // Booked ranges per court
-    const bookedMap = new Map<string, Array<{ start: number; end: number }>>()
-    for (const slot of availData?.data ?? []) {
-      const ranges = bookedMap.get(slot.court_id) ?? []
-      ranges.push({ start: toMinutes(slot.start_time), end: toEndMinutes(slot.end_time) })
-      bookedMap.set(slot.court_id, ranges)
-    }
-
-    const hours = parseOpeningHours(arenaData.opening_hours ?? '', date)
-    if (!hours) throw new Error('Could not parse opening hours')
-
-    const slotTimes = halfHourSlots(hours.open, hours.close)
-    const currentMinutes = currentMinutesFor(date)
-    const courts: WineroCourt[] = arenaData.courts ?? []
-
-    return courts
-      .filter(court => !config.skipCourts?.some(s => court.name.toLowerCase().includes(s.toLowerCase())))
-      .map(court => {
-        const booked = bookedMap.get(court.id) ?? []
-        const slots: TimeSlot[] = slotTimes.map(time => {
-          const slotStart = toMinutes(time)
-          const isBooked = booked.some(b => b.start < slotStart + 30 && b.end > slotStart)
-          const available = !isSlotOver(time, currentMinutes) && !isBooked
-          return { time, available, price: available ? getPriceForSlot(court, date, time) : null }
-        })
-        return {
-          id: `${venue.id}-${court.id}`,
-          name: court.name,
-          type: court.name.toLowerCase().includes('single') ? 'singles' as const : 'doubles' as const,
-          slots,
-        }
-      })
+    if (!arena?.id) throw new Error('Arena not found')
+    return buildWineroCourts({ arena, booked: availability?.data ?? [] }, config, date, venue.id, currentMinutesFor(date))
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addDays, currentMinutesFor, dayOfWeek, fromMinutes, halfHourSlots, isSlotOver,
+  addDays, currentMinutesFor, dayOfWeek, fromMinutes, isSlotOver,
   isValidIsoDate, nextDatesLT, nowLTMinutes, pastDatesLT, toEndMinutes, toMinutes, todayLT,
 } from '../../server/utils/time'
 
@@ -95,11 +95,5 @@ describe('clock helpers', () => {
   it('formats minutes', () => {
     expect(fromMinutes(450)).toBe('07:30')
     expect(fromMinutes(0)).toBe('00:00')
-  })
-
-  it('generates half-hour slots, including to midnight', () => {
-    expect(halfHourSlots('21:00', '23:00')).toEqual(['21:00', '21:30', '22:00', '22:30'])
-    expect(halfHourSlots('23:00', '00:00')).toEqual(['23:00', '23:30'])
-    expect(halfHourSlots('10:00', '10:00')).toEqual([])
   })
 })

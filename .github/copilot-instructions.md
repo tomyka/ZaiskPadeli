@@ -31,11 +31,16 @@ server/
     availability-store.ts    # get(date) / refresh(date): freshness, per-venue carry-over, dedupe; storage seam (KV adapter, in-memory adapter)
     time.ts                  # Lithuanian timezone utilities — always use these
     venues.ts                # VENUE REGISTRY — single source of venue metadata (pure data, also imported by the client)
-    scraper-all.ts           # binds each venue id to a scraper (SCRAPERS) + runner (Venue shell, deadline, error handling)
-    ntennis.ts               # pure parser shared by all nTennis/nSoft grid venues (a1padel, kaunopadelis, tennisspace, vilniuspadel)
+    scraper-all.ts           # SCRAPERS: each venue id → its ScraperSpec (platform + ids, or `own`); scraperFor; runner (Venue shell, deadline, error handling)
+    day-grid.ts              # the venue day as half-hour slots: toSlots (past slots, price only if free), openingSlots (past midnight), bookedAt, perHalfHour
+    ntennis.ts               # pure parser shared by every nTennis/nSoft grid venue
     ntennis-fetch.ts         # nTennis guest-login + grid fetch — RUNTIME-AGNOSTIC: also bundled into cf-proxy (web APIs only, no cheerio/Nitro auto-imports)
-    parse.ts                 # small pure HTML helpers: parseEuro, parseBgColor, expandHourHeader
-    scraper-*.ts             # one file per venue / platform; each returns Court[]
+    gopadel-fetch.ts         # GO Padel API day fetch — RUNTIME-AGNOSTIC, same rules as ntennis-fetch.ts
+    protected-sites.ts       # Cloudflare-protected sites (kaunopadelis, gopadel): fetch + check per site — RUNTIME-AGNOSTIC, shared with the Worker
+    protected-fetch.ts       # fetchProtectedDay(site, date): through the cf-proxy Worker in prod, directly in dev; runs the site's check
+    user-agent.ts            # BROWSER_UA for sites that turn away obvious bots
+    parse.ts                 # small pure HTML helpers: parseEuro, parseBgColor, expandHourHeader, courtTypeFromName
+    scraper-*.ts             # platform scrapers (moove, ntennis, winero, playball: factories taking that platform's ids) and clubs' own systems; each returns Court[]
 app/components/              # shared UI: SelectMenu, SegmentedControl, BottomSheet, VenueCard, SessionDetails, CourtFilters, CourtTags
 app/utils/
   location.ts                # the visitor's Location (county + optional municipality), its moves and filter choices
@@ -71,10 +76,14 @@ nextDatesLT(n)      // → ["2026-05-28", "2026-05-29", ...]
 ### Adding a new venue
 
 1. Add an entry to `VENUES` in `server/utils/venues.ts` (id, name, address, municipality, bookingUrl, indoor default, accent colour). This alone drives the venue card, filter pill colour and the county's "coming soon" badge. If the venue's municipality is new, add it to `MUNICIPALITY_COUNTY` in `server/utils/regions.ts`.
-2. Bind a scraper in `SCRAPERS` in `server/utils/scraper-all.ts`. `SCRAPERS` is a `Record<VenueId, Scraper>`, so **typecheck fails until every registry venue has a scraper**.
-   - **Winero arena**: `myvenue: wineroScraper({ arenaId: '<uuid from /api/arenas?sport=padel>', skipCourts: ['kamuoliukų mašina', 'ball machine'] })`
-   - **nTennis/nSoft site**: a ~10-line file calling `fetchNTennisGrid({ baseUrl, placeId }, date)` then `parseNTennisGrid(html, { idPrefix: venue.id, ... })`
-   - **Custom**: create `server/utils/scraper-<name>.ts` exporting `scrape<Name>(date: string, venue: VenueInfo): Promise<Court[]>`. Build court ids as `${venue.id}-<platform court id>` (never hard-code the venue id). Keep parsing in a pure exported function and add a fixture test in `tests/`.
+2. Add its `ScraperSpec` to `SCRAPERS` in `server/utils/scraper-all.ts`. `SCRAPERS` is a `Record<VenueId, ScraperSpec>`, so **typecheck fails until every registry venue has one**. Specs stay out of `venues.ts` because that file is bundled into the client and some specs carry guest credentials. On a known platform it is one line of data:
+   - **Moove**: `{ platform: 'moove', locationId, indoor? }`; bookingUrl `https://app.moove.lt/padel/club/reservation/<clubId>?locationId=<locationId>`
+   - **nTennis/nSoft**: `{ platform: 'ntennis', baseUrl, placeId, fallbackGuest?, nameFromSpan? }`; bookingUrl on the same origin. Behind Cloudflare: add the site to `protected-sites.ts` and use `{ platform: 'ntennis', protected: '<site>' }`
+   - **Winero**: `{ platform: 'winero', arenaId: '<uuid from /api/arenas?sport=padel>', skipCourts? }`
+   - **Playball**: `{ platform: 'playball', slug }`; bookingUrl `…/arenas/<slug>/book`
+   - **A club's own system**: create `server/utils/scraper-<name>.ts` exporting `scrape<Name>(date, venue)` and bind `{ platform: 'own', scrape: scrape<Name> }`. Build court ids as `${venue.id}-<platform court id>` (never hard-code the venue id). Turn upstream data into slots with `toSlots` / `openingSlots` / `bookedAt` from `day-grid.ts`, keep parsing in a pure exported function, and add a fixture test (pure, plus one through the scraper with `routeFetch` from `tests/server/helpers/fake-fetch.ts`).
+
+   `tests/server/scrapers-e2e.test.ts` checks each bookingUrl names the place its spec scrapes.
 
 ### Venue and Court IDs
 
@@ -88,7 +97,7 @@ interface Court {
   id: string
   name: string
   type: 'doubles' | 'singles' | 'unknown'
-  indoor?: boolean    // omit to use the registry default; set per court only when it varies (e.g. K-Padel)
+  indoor?: boolean    // omit to use the registry default; set per court only when it varies (Moove "laukas" courts, Playball court_type)
   slots: TimeSlot[]   // 30-min slots; { time: "HH:MM", available: boolean, price: number|null }
 }
 ```
@@ -99,7 +108,7 @@ Scrapers **throw** on any failure (HTTP error, login failure, unexpected markup)
 
 ### Past slots (today only)
 
-When scraping today, mark finished slots unavailable: `const now = currentMinutesFor(date)` then `available = ... && !isSlotOver(time, now)`.
+Build slots with `toSlots(cells, currentMinutesFor(date))` from `day-grid.ts`: it marks finished slots unavailable (today only) and keeps prices on available slots only. A venue day can run past midnight: "00:30" after a late evening sorts and counts as the end of that day (`dayMinutes` in `time.ts`).
 
 ### Winero scraper internals
 
@@ -109,13 +118,13 @@ Winero's public API (`winero.lt/api/`) returns **booked** slots, not available o
 3. Generates all 30-min slots from opening hours, marks booked ones as unavailable
 4. Prices are per-hour in the API → divide by 2 for per-30-min display
 
-### K-Padel / Moove.lt platform
+### Moove.lt platform (K-Padel, Drevernos, Fanų, Sky Padel, UPadel …)
 
-Uses `app.moove.lt/api/v1/settings/tickets/user?locationIds=227&sport=padel&...`. Returns all time-slot "tickets"; status `"free"` = available. Price is in euro cents (÷100 for euros). Indoor/outdoor is detected by `"laukas"` in court name (Lithuanian for "outdoor field").
+`mooveScraper` in `scraper-moove.ts`: `app.moove.lt/api/v1/settings/tickets/user?locationIds=<id>&sport=padel&size=1000…` returns every half-hour "ticket" of the day; status `"free"` = available; price in euro cents per half hour. A day that doesn't fit one page fails rather than show partial data. Location ids: `/api/v1/settings/locations?size=500`. A court named "… laukas" ("outdoor field") is outdoor even at an indoor location. Check a location has real bookings before adding it (#41).
 
 ### Padel4U (padel4u.cloud, custom WordPress plugin)
 
-The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. Availability: `POST /wp-admin/admin-ajax.php` with `action=padel_get_available_slots&nonce&court_id&date` → one entry per 30-min slot with its own price and `available`. The club is open until 02:30 and lists after-midnight slots under the same date; the scraper drops them (our grid is one calendar day). Dates past the ~30-day booking window return `success:false` ("Rezervuoti galima tik iki …") and return no courts, so the venue shows "Nėra duomenų šiai dienai" rather than a fetch failure.
+The booking page embeds `var padelReservations = {nonce, courts:[{id,name}]}`. Availability: `POST /wp-admin/admin-ajax.php` with `action=padel_get_available_slots&nonce&court_id&date` → one entry per 30-min slot with its own price and `available`. The club is open until 02:30 and lists after-midnight slots under the same date; they are kept, at the end of that venue day. Dates past the ~30-day booking window return `success:false` ("Rezervuoti galima tik iki …") and return no courts, so the venue shows "Nėra duomenų šiai dienai" rather than a fetch failure.
 
 ### UI components and style
 
