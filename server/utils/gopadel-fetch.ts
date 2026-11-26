@@ -41,8 +41,10 @@ export async function fetchGoPadelDay(date: string): Promise<GoPadelDay> {
       headers: { 'User-Agent': UA, 'Accept': 'application/json', 'Cookie': cookie },
       signal: AbortSignal.timeout(10_000),
     })
-    const body = (await res.json()) as Envelope<T>
-    if (!res.ok || !body.success) throw new Error(`${path}: HTTP ${res.status} ${body.message ?? ''}`.trim())
+    // A Cloudflare challenge is HTML, not JSON: report the HTTP status, not a parse error
+    let body: Envelope<T> | undefined
+    try { body = (await res.json()) as Envelope<T> } catch { body = undefined }
+    if (!res.ok || !body?.success) throw new Error(`${path}: HTTP ${res.status} ${body?.message ?? ''}`.trim())
     return body.data
   }
 

@@ -29,10 +29,12 @@ describe('parseMooveTickets', () => {
     expect(late[0]!.slots.map(s => s.available)).toEqual([false, true])
   })
 
-  it('takes indoor from the config, else from a "laukas" court name', () => {
+  it('takes indoor from the config (indoor by default); a "laukas" court is always outdoor', () => {
     expect(courts[0]!.indoor).toBe(true)
     expect(parseMooveTickets(tickets, 'x', -1, { indoor: false })[0]!.indoor).toBe(false)
-    const outdoor = parseMooveTickets([{ ...tickets[0]!, court: { id: 9, name: 'Laukas 1' } }], 'x', -1)
-    expect(outdoor[0]!.indoor).toBe(false)
+    const laukas = [{ ...tickets[0]!, court: { id: 9, name: 'Laukas 1' } }]
+    expect(parseMooveTickets(laukas, 'x', -1)[0]!.indoor).toBe(false)
+    // Drevernos: an indoor location whose seasonal outdoor courts appear in the same feed (#42, #45)
+    expect(parseMooveTickets(laukas, 'x', -1, { indoor: true })[0]!.indoor).toBe(false)
   })
 })

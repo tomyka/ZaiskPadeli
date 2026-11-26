@@ -35,7 +35,7 @@ export interface MooveConfig {
   locationId: number
   /** Court name substrings to skip (case-insensitive); ball machines by default */
   skipCourts?: string[]
-  /** The whole location is indoor/outdoor; when unset, a court named "… laukas" is outdoor */
+  /** Default for the location's courts (indoor when unset); a court named "… laukas" is always outdoor */
   indoor?: boolean
 }
 
@@ -70,7 +70,7 @@ export function parseMooveTickets(
         id: `${idPrefix}-${courtId}`,
         name,
         type: isSinglesCourtName(name) ? 'singles' as const : 'doubles' as const,
-        indoor: config.indoor ?? !name.toLowerCase().includes('laukas'),
+        indoor: !name.toLowerCase().includes('laukas') && (config.indoor ?? true),
         slots,
       }
     })
