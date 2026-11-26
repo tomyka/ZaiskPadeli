@@ -11,11 +11,11 @@
         <div class="flex h-14 items-center justify-between">
           <!-- Logo "Paukščiukas" (#51): the mark is the Ž of Žaisk, its háček a bounce with the ball at the bounce point -->
           <a href="/" aria-label="Žaisk Padelį" class="group flex select-none items-baseline">
-            <svg viewBox="44 8 120 168" class="h-[26px] w-[18.6px] shrink-0 overflow-visible" aria-hidden="true">
-              <path d="M58 84 H142 L60 160 H146" fill="none" class="stroke-white" stroke-width="24" stroke-linejoin="miter"/>
+            <svg viewBox="52 10 98 162" class="h-[25.9px] w-[15.7px] shrink-0 overflow-visible" aria-hidden="true">
+              <path d="M56 72 H146 V94 L86 150 H146 V172 H56 V150 L116 94 H56 Z" class="fill-white"/>
               <g class="logo-bounce">
-                <path d="M66 18 L100 48 L134 18" fill="none" class="stroke-ball" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-                <circle cx="100" cy="50" r="16" class="fill-ball stroke-ink" stroke-width="5"/>
+                <path d="M67 18 L101 46 L135 18" fill="none" class="stroke-ball" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="101" cy="48" r="16" class="fill-ball stroke-ink" stroke-width="5"/>
               </g>
             </svg>
             <span class="font-display text-[22px] font-bold uppercase leading-none tracking-wide text-white">aisk <span class="text-ball">Padelį</span></span>

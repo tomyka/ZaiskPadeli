@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <!-- Žaisk Padelį mark ("Paukščiukas"): a Ž whose háček is a bounce, the ball at the bounce point -->
   <rect width="200" height="200" rx="44" fill="#111827"/>
-  <g transform="translate(100 100) scale(1.06) translate(-102 -92)"><path d="M58 84 H142 L60 160 H146" fill="none" stroke="#ffffff" stroke-width="28" stroke-linejoin="miter"/><path d="M64 16 L100 48 L136 16" fill="none" stroke="#fb923c" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="50" r="19" fill="#fb923c" stroke="#111827" stroke-width="6"/></g>
+  <g transform="translate(100 100) scale(1.06) translate(-101 -93)"><path d="M54 70 H148 V98 L90 146 H148 V174 H54 V146 L112 98 H54 Z" fill="#ffffff"/><path d="M65 16 L101 46 L137 16" fill="none" stroke="#fb923c" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="101" cy="48" r="19" fill="#fb923c" stroke="#111827" stroke-width="6"/></g>
 </svg>
